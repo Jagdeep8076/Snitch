@@ -1,17 +1,17 @@
-import { body } from "express-validator";
+import { body, validationResult } from "express-validator";
 
+function validateRequest(req, res, next) {
+    const errors = validationResult(req);
 
-
-function validateRequest(req , res, next) {
-
-    const errors = validateRequest(req);
-    if(!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            errors: errors.array()
+        });
     }
 
     next();
-
-} 
+}
 
 export const validateRegisterUser = [
     body("fullname")
@@ -69,6 +69,11 @@ export const validateRegisterUser = [
         .matches(/^\d{6}$/)
         .withMessage("Pincode must be a 6-digit number"),
 
-    validateRequest
+    body("isSeller")
+        .notEmpty()
+        .withMessage("isSeller is required")
+        .isBoolean()
+        .withMessage("isSeller must be a boolean value"),
 
-    ]
+    validateRequest
+];

@@ -1,0 +1,32 @@
+for registeration  we said that 
+/****
+ * email
+ * contact
+ * password
+ * fullname
+ * role(buyer/seller)
+ * address
+ * city 
+ * state
+ * pincode
+ */ 
+ i will use schema for this type and also we use npm i express-validator
+ package for perfect data
+
+
+ Register 
+ POST /register
+       ↓
+req.body
+       ↓
+Check existing email/contact
+       ↓
+Hash password
+       ↓
+Create User
+       ↓
+Generate JWT
+       ↓
+Store JWT in HTTP-only Cookie
+       ↓
+Send user data
