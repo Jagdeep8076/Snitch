@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Join the Studio — Registration</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Plus Jakarta Sans Font Family -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-container": "#dfe2ed",
+            "surface-variant": "#e2e2e4",
+            "on-secondary-fixed": "#181c23",
+            "on-primary-fixed": "#1b1b1f",
+            "tertiary": "#000000",
+            "outline": "#76777b",
+            "error-container": "#ffdad6",
+            "on-tertiary-fixed-variant": "#4c4541",
+            "background": "#f9f9fb",
+            "primary-container": "#1b1b1f",
+            "outline-variant": "#c7c6cb",
+            "inverse-on-surface": "#f0f0f2",
+            "on-secondary-fixed-variant": "#43474f",
+            "inverse-surface": "#2f3132",
+            "on-primary": "#ffffff",
+            "tertiary-fixed": "#ece0db",
+            "surface-bright": "#f9f9fb",
+            "surface": "#f9f9fb",
+            "inverse-primary": "#c7c6ca",
+            "on-error-container": "#93000a",
+            "on-tertiary-container": "#8b827d",
+            "primary-fixed": "#e3e2e6",
+            "surface-container-low": "#f3f3f5",
+            "tertiary-fixed-dim": "#cfc4bf",
+            "surface-container-high": "#e8e8ea",
+            "surface-container": "#eeeef0",
+            "surface-dim": "#d9dadc",
+            "on-tertiary": "#ffffff",
+            "secondary": "#5b5e67",
+            "primary-fixed-dim": "#c7c6ca",
+            "surface-container-highest": "#e2e2e4",
+            "tertiary-container": "#201a17",
+            "primary": "#000000",
+            "on-primary-container": "#848387",
+            "on-surface": "#1a1c1d",
+            "error": "#ba1a1a",
+            "surface-container-lowest": "#ffffff",
+            "on-error": "#ffffff",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#5e5e62",
+            "on-tertiary-fixed": "#201a17",
+            "on-background": "#1a1c1d",
+            "secondary-fixed-dim": "#c3c6d1",
+            "on-primary-fixed-variant": "#46464a",
+            "on-surface-variant": "#46464b",
+            "on-secondary-container": "#61646d",
+            "secondary-fixed": "#dfe2ed"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "1rem",
+            "margin": "1.5rem",
+            "space-sm": "0.5rem",
+            "gutter": "1rem",
+            "space-xl": "2.5rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "label-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "label-lg": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "body-lg": ["16px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "400" }],
+            "label-lg": ["13px", { "lineHeight": "18px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "26px", "letterSpacing": "-0.015em", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "30px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.025em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased selection:bg-primary selection:text-on-primary min-h-screen">
+<!-- Outer Frame Container -->
+<div class="min-h-screen flex flex-col justify-between max-w-lg mx-auto bg-surface-container-lowest shadow-[0_16px_40px_-12px_rgba(17,18,21,0.04)] border-x border-surface-container-high">
+<!-- Top Navigation Bar (Derived from Shared Components JSON: TopAppBar) -->
+<header class="sticky top-0 z-50 bg-surface border-b border-outline-variant/30 backdrop-blur-md">
+<div class="flex justify-between items-center w-full px-margin h-16 max-w-lg mx-auto">
+<!-- Leading Action: Back -->
+<button aria-label="Go back" class="inline-flex items-center justify-center w-10 h-10 rounded-full text-primary hover:bg-surface-container-low transition-colors duration-150 active:scale-95" type="button">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<!-- Brand/Section Monogram Tag -->
+<div class="flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">01 / Step One</span>
+<span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-on-surface">Registration</span>
+</div>
+<!-- Trailing Action: Help -->
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-label-md text-label-md font-medium text-primary hover:bg-surface-container-low transition-colors duration-150 active:scale-95" type="button">
+<span>Help</span>
+<span class="material-symbols-outlined" data-icon="help" style="font-size: 16px;">help</span>
+</button>
+</div>
+</header>
+<!-- Main Scrollable Canvas Content -->
+<main class="flex-1 px-margin pb-16 pt-8">
+<!-- Hero Header with Architectural Whitespace -->
+<section class="mb-10 text-left">
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container-low border border-surface-container-high mb-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-sm text-label-sm font-medium tracking-wider text-secondary uppercase">Studio Edition</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary tracking-tight font-semibold">
+          Join the Studio
+        </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-sm leading-relaxed">
+          Crafted for discerning creators, curators, and independent collectors worldwide.
+        </p>
+</section>
+<!-- Registration Form -->
+<form class="space-y-8" id="registrationForm" onsubmit="event.preventDefault();">
+<!-- SECTION 1: Personal Details -->
+<section class="space-y-5">
+<div class="flex items-center justify-between pb-1 border-b border-surface-container-high">
+<span class="font-label-md text-label-md font-medium text-secondary uppercase tracking-wider">Account Credentials</span>
+<span class="font-label-sm text-label-sm text-outline">Required</span>
+</div>
+<!-- Full Name -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="fullName">
+              Legal Full Name
+            </label>
+<div class="relative">
+<input class="w-full h-14 bg-surface-container-low border border-surface-container-high rounded-xl px-4 font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="fullName" name="fullName" placeholder="e.g. Julian Vance" required="" type="text"/>
+</div>
+</div>
+<!-- Email Address -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="email">
+              Email Address
+            </label>
+<div class="relative flex items-center">
+<span class="absolute left-4 text-outline pointer-events-none flex items-center">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+</span>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container-low border border-surface-container-high rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="email" name="email" placeholder="julian@studiocraft.io" required="" type="email"/>
+</div>
+</div>
+<!-- Phone Number with Prefix -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="phoneNumber">
+              Contact Phone
+            </label>
+<div class="flex gap-2">
+<div class="relative w-28 shrink-0">
+<select class="w-full h-14 bg-surface-container-low border border-surface-container-high rounded-xl px-3 font-body-md text-body-md text-on-surface appearance-none focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none pr-8">
+<option value="+1">US +1</option>
+<option value="+44">UK +44</option>
+<option value="+33">FR +33</option>
+<option value="+49">DE +49</option>
+<option value="+81">JP +81</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+<input class="flex-1 h-14 bg-surface-container-low border border-surface-container-high rounded-xl px-4 font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="phoneNumber" name="phoneNumber" placeholder="(555) 019-2834" type="tel"/>
+</div>
+</div>
+<!-- Password with Show/Hide Toggle & Strength Meter -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="password">
+                Create Master Password
+              </label>
+<!-- Discrete Strength Dots Indicator -->
+<div class="flex items-center gap-1.5" title="Password strength">
+<span class="font-label-sm text-label-sm text-outline mr-1">Security:</span>
+<span class="w-2 h-2 rounded-full bg-primary transition-colors duration-200"></span>
+<span class="w-2 h-2 rounded-full bg-primary transition-colors duration-200"></span>
+<span class="w-2 h-2 rounded-full bg-primary transition-colors duration-200"></span>
+<span class="w-2 h-2 rounded-full bg-surface-container-high transition-colors duration-200"></span>
+</div>
+</div>
+<div class="relative flex items-center">
+<input class="w-full h-14 pl-4 pr-12 bg-surface-container-low border border-surface-container-high rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="password" name="password" placeholder="At least 8 characters" required="" type="password"/>
+<button aria-label="Toggle password visibility" class="absolute right-3 p-2 text-outline hover:text-on-surface transition-colors" id="togglePassword" onclick="const p = document.getElementById('password'); const isPass = p.type === 'password'; p.type = isPass ? 'text' : 'password'; this.querySelector('span').textContent = isPass ? 'visibility_off' : 'visibility';" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 2: Address & Location Details -->
+<section class="space-y-5 pt-4">
+<div class="flex items-center justify-between pb-1 border-b border-surface-container-high">
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md font-medium text-secondary uppercase tracking-wider">Location Details</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">Primary</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Shipping</span>
+</div>
+<!-- Street Address -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="address">
+              Street Address
+            </label>
+<input class="w-full h-14 bg-surface-container-low border border-surface-container-high rounded-xl px-4 font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="address" name="address" placeholder="Suite, building number, avenue" type="text"/>
+</div>
+<!-- City and State (2 Columns Grid) -->
+<div class="grid grid-cols-2 gap-3">
+<div class="space-y-2">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="city">
+                City / Region
+              </label>
+<input class="w-full h-14 bg-surface-container-low border border-surface-container-high rounded-xl px-4 font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="city" name="city" placeholder="New York" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="state">
+                State / Province
+              </label>
+<input class="w-full h-14 bg-surface-container-low border border-surface-container-high rounded-xl px-4 font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="state" name="state" placeholder="NY" type="text"/>
+</div>
+</div>
+<!-- Postal Code -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md font-medium text-on-surface" for="zipcode">
+              Postal / Zip Code
+            </label>
+<input class="w-full h-14 bg-surface-container-low border border-surface-container-high rounded-xl px-4 font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200 outline-none" id="zipcode" name="zipcode" placeholder="10001" type="text"/>
+</div>
+</section>
+<!-- SECTION 3: Seller Privilege Card Toggle -->
+<section class="pt-4">
+<div class="group cursor-pointer select-none rounded-2xl bg-surface-container-low border border-surface-container-high hover:border-outline p-5 transition-all duration-200 relative overflow-hidden" id="sellerToggleCard" onclick="toggleSellerSwitch()">
+<!-- Top Status Row -->
+<div class="flex items-start justify-between gap-4 mb-3">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-semibold text-primary">
+                    Merchant Access
+                  </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider">
+                    Privilege
+                  </span>
+</div>
+<p class="font-label-md text-label-md font-medium text-on-surface">
+                  I want to register as a Verified Seller
+                </p>
+</div>
+<!-- Custom Pill Switch Indicator -->
+<div class="relative shrink-0 pt-0.5">
+<div class="w-12 h-7 bg-surface-container-highest border border-outline-variant/60 rounded-full transition-colors duration-200 flex items-center p-0.5" id="switchTrack">
+<div class="w-5 h-5 bg-white rounded-full shadow-sm transform transition-transform duration-200 translate-x-0" id="switchThumb"></div>
+</div>
+<input class="sr-only" id="isSeller" name="isSeller" type="checkbox"/>
+</div>
+</div>
+<!-- Descriptive Editorial Microcopy -->
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              List bespoke collections, access studio sales analytics, and create your dedicated public designer showcase.
+            </p>
+<!-- Bottom Perquisite Tags -->
+<div class="mt-4 pt-3 border-t border-surface-container-high/60 flex items-center gap-3 text-secondary font-label-sm text-label-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-size: 14px;">check_circle</span>
+                Zero listing fees
+              </span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-size: 14px;">check_circle</span>
+                Instant payouts
+              </span>
+</div>
+</div>
+</section>
+<!-- SECTION 4: Terms Consent & Commit Action -->
+<section class="pt-6 space-y-6">
+<!-- Legal Agreements Checkbox -->
+<label class="flex items-start gap-3 cursor-pointer group select-none">
+<div class="relative flex items-center pt-0.5">
+<input class="w-5 h-5 rounded-[6px] border border-outline text-primary focus:ring-0 focus:ring-offset-0 transition-colors cursor-pointer" required="" type="checkbox"/>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant leading-normal">
+              I certify that I am at least 18 years old and agree to the 
+              <a class="text-primary font-medium underline underline-offset-4 hover:text-outline transition-colors" href="#">Terms of Service</a> 
+              and 
+              <a class="text-primary font-medium underline underline-offset-4 hover:text-outline transition-colors" href="#">Privacy Policy</a>.
+            </span>
+</label>
+<!-- Primary Submit Button -->
+<div class="space-y-4">
+<button class="w-full h-14 bg-primary text-on-primary rounded-full font-label-lg text-label-lg tracking-wider uppercase flex items-center justify-center gap-3 shadow-sm hover:bg-neutral-800 active:scale-[0.99] transition-all duration-150" type="submit">
+<span>Create Account</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<!-- Reassurance Note -->
+<div class="flex items-center justify-center gap-1.5 text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined" data-icon="lock" style="font-size: 13px;">lock</span>
+<span>256-bit encrypted archival transmission</span>
+</div>
+</div>
+<!-- Discrete Footnote to Sign In -->
+<div class="text-center pt-2">
+<p class="font-body-md text-body-md text-secondary">
+              Already registered in the Studio?
+              <a class="font-semibold text-primary underline underline-offset-4 hover:text-outline ml-1 transition-colors" href="#">
+                Sign In
+              </a>
+</p>
+</div>
+</section>
+</form>
+</main>
+<!-- Quiet Editorial Footer -->
+<footer class="py-6 px-margin border-t border-surface-container-high text-center">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-widest">
+        The Studio Architectural Archive © 2025
+      </p>
+</footer>
+</div>
+<!-- Interactive Logic for Micro-Interactions -->
+<script>
+    function toggleSellerSwitch() {
+      const checkbox = document.getElementById('isSeller');
+      const track = document.getElementById('switchTrack');
+      const thumb = document.getElementById('switchThumb');
+      
+      checkbox.checked = !checkbox.checked;
+      
+      if (checkbox.checked) {
+        track.classList.remove('bg-surface-container-highest', 'border-outline-variant/60');
+        track.classList.add('bg-primary', 'border-primary');
+        thumb.classList.add('translate-x-5');
+      } else {
+        track.classList.add('bg-surface-container-highest', 'border-outline-variant/60');
+        track.classList.remove('bg-primary', 'border-primary');
+        thumb.classList.remove('translate-x-5');
+      }
+    }
+  </script>
+</body></html>

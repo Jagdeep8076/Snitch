@@ -41,11 +41,11 @@ export const validateRegisterUser = [
         .isLength({ min: 6 })
         .withMessage("Password must be at least 6 characters"),
 
-    body("role")
+    body("isSeller")
         .notEmpty()
-        .withMessage("Role is required")
-        .isIn(["buyer", "seller"])
-        .withMessage("Role must be either buyer or seller"),
+        .withMessage("isSeller is required")
+        .isBoolean()
+        .withMessage("isSeller must be a boolean value"),
 
     body("address")
         .trim()
@@ -74,6 +74,23 @@ export const validateRegisterUser = [
         .withMessage("isSeller is required")
         .isBoolean()
         .withMessage("isSeller must be a boolean value"),
+
+    validateRequest
+];
+
+export const validateLoginUser = [
+    body("email")
+        .trim()
+        .notEmpty()
+        .withMessage("Email is required")
+        .isEmail()
+        .withMessage("Invalid email format"),
+
+    body("password")
+        .notEmpty()
+        .withMessage("Password is required")
+        .isLength({ min: 6 })
+        .withMessage("Password must be at least 6 characters"),
 
     validateRequest
 ];
