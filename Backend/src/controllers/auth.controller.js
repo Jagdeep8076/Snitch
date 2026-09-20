@@ -59,23 +59,32 @@ export const register = async (req, res) => {
             });
         }
 
-        const user = await userModel.create({
-            email,
-            contact,
-            password,
-            fullname,
-            address,
-            city,
-            state,
-            pincode,
-            role: isSeller ? "seller" : "buyer"
-        });
+      const user = await userModel.create({
+    email,
+    contact,
+    password,
+    fullname,
+    address,
+    city,
+    state,
+    pincode,
+    role: isSeller ? "seller" : "buyer"
+});
 
-        return sendTokenResponse(
-            user,
-            res,
-            "User registered successfully"
-        );
+console.log("REGISTER SUCCESS");
+console.log("User ID:", user._id);
+console.log("Email:", user.email);
+
+return res.status(201).json({
+    success: true,
+    message: "Registration successful",
+    user: {
+        id: user._id,
+        email: user.email,
+        fullname: user.fullname,
+        role: user.role
+    }
+});
 
     } catch (error) {
         console.log(error);
@@ -87,23 +96,43 @@ export const register = async (req, res) => {
     }
 };
 
-export const login = async (req, res) =>{
-    const { email, password } =req.body;
+export const login = async (req, res) => {
+    const { email, password } = req.body;
 
-    const user  = await userModel.findOne({ email });
+    try {
+        const user = await userModel.findOne({ email });
 
-    if(!user){
-        return res.status(400).json({
-            message: "Invalid Email Or  Password"
-        })
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        const isMatch = await user.comparePassword(password);
+
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        console.log("LOGIN SUCCESS:", user.email);
+
+        return sendTokenResponse(
+            user,
+            res,
+            "User logged in successfully"
+        );
+
+    } catch (error) {
+        console.error("LOGIN ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
     }
-const isMatch = await user.coamparePassword(password)
-
-if( !isMatch){
-    return res.status(400).json({
-        message: " Invalid Email or Password"
-    })
-}
-await sendTokenResponse(user, res, "User LoggedIn Successfully" )
-}
+};
 

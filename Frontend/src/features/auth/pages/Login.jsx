@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import { useAuth } from "../hook/useAuth";
@@ -8,6 +8,7 @@ import StudioPass3D from "../../../components/StudioPass3D";
 
 const Login = () => {
     const { handleLogin } = useAuth();
+    const navigate = useNavigate();
 
     const { loading, error } = useSelector(
         (state) => state.auth
@@ -32,10 +33,19 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        await handleLogin({
+        const data = await handleLogin({
             email: formData.email,
             password: formData.password,
         });
+
+        // Login successful → Home
+        if (data?.success) {
+            console.log("LOGIN SUCCESS → HOME");
+
+            navigate("/", {
+                replace: true,
+            });
+        }
     };
 
     return (
@@ -44,9 +54,7 @@ const Login = () => {
             {/* THREE.JS BACKGROUND */}
             <ThreeBackground variant="login" />
 
-            <div
-                className="relative z-10"
-            >
+            <div className="relative z-10">
 
                 {/* NAVBAR */}
                 <header
@@ -285,16 +293,12 @@ const Login = () => {
                                     {/* PASSWORD */}
                                     <div className="flex flex-col gap-1.5">
 
-                                        <div className="flex items-center justify-between">
-
-                                            <label
-                                                className="text-sm font-medium text-on-surface"
-                                                htmlFor="password"
-                                            >
-                                                Password
-                                            </label>
-
-                                        </div>
+                                        <label
+                                            className="text-sm font-medium text-on-surface"
+                                            htmlFor="password"
+                                        >
+                                            Password
+                                        </label>
 
                                         <div className="relative">
 
@@ -421,6 +425,7 @@ const Login = () => {
                 </div>
 
             </div>
+
         </div>
     );
 };

@@ -3,9 +3,9 @@ import { createSlice } from "@reduxjs/toolkit"
 const authSlice = createSlice({
     name: "auth",
     initialState: {
-        user: "null",
-        loading: "false",
-        error: "null",
+        user: null,
+        loading: false,
+        error:null ,
     },
     reducers: {
         setUser: (state, action) => {
