@@ -38,7 +38,6 @@ const Login = () => {
             password: formData.password,
         });
 
-        // Login successful → Home
         if (data?.success) {
             console.log("LOGIN SUCCESS → HOME");
 
@@ -51,12 +50,10 @@ const Login = () => {
     return (
         <div className="bg-background text-on-surface min-h-screen antialiased font-[Plus_Jakarta_Sans]">
 
-            {/* THREE.JS BACKGROUND */}
             <ThreeBackground variant="login" />
 
             <div className="relative z-10">
 
-                {/* NAVBAR */}
                 <header
                     className="sticky top-0 z-50 border-b border-white/5 backdrop-blur-2xl"
                     style={{
@@ -97,10 +94,8 @@ const Login = () => {
                     </div>
                 </header>
 
-                {/* MAIN */}
                 <div className="min-h-[calc(100vh-3.5rem)] grid lg:grid-cols-[1fr_520px] xl:grid-cols-[1fr_580px]">
 
-                    {/* LEFT PANEL */}
                     <div
                         className="hidden lg:flex flex-col justify-between border-r border-white/10 p-10 xl:p-14 relative overflow-hidden"
                         style={{
@@ -114,14 +109,12 @@ const Login = () => {
 
                         <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-secondary/5 blur-3xl pointer-events-none" />
 
-                        {/* BRAND */}
                         <div className="relative">
                             <span className="text-2xl font-bold tracking-tight text-on-surface">
                                 Snitch
                             </span>
                         </div>
 
-                        {/* CENTER */}
                         <div className="relative flex flex-col gap-6">
 
                             <div
@@ -155,7 +148,6 @@ const Login = () => {
 
                             </div>
 
-                            {/* 3D PASS */}
                             <div
                                 className="relative rounded-2xl border border-white/10 p-4"
                                 style={{
@@ -183,7 +175,6 @@ const Login = () => {
 
                         </div>
 
-                        {/* FOOTER */}
                         <div className="relative">
                             <p className="text-xs text-outline">
                                 © 2025 Snitch. All rights reserved.
@@ -192,7 +183,6 @@ const Login = () => {
 
                     </div>
 
-                    {/* RIGHT LOGIN PANEL */}
                     <div
                         className="flex flex-col min-h-[calc(100vh-3.5rem)]"
                         style={{
@@ -206,7 +196,6 @@ const Login = () => {
 
                             <div className="w-full px-4 sm:px-8 lg:px-10 xl:px-12 py-10">
 
-                                {/* MOBILE BRAND */}
                                 <div className="lg:hidden mb-10 text-center">
 
                                     <span className="text-2xl font-bold text-on-surface">
@@ -219,7 +208,6 @@ const Login = () => {
 
                                 </div>
 
-                                {/* HEADING */}
                                 <div className="mb-8">
 
                                     <div className="flex items-center gap-2 mb-4">
@@ -242,7 +230,6 @@ const Login = () => {
 
                                 </div>
 
-                                {/* ERROR */}
                                 {error && (
                                     <div className="mb-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 flex items-start gap-3">
 
@@ -260,13 +247,11 @@ const Login = () => {
                                     </div>
                                 )}
 
-                                {/* FORM */}
                                 <form
                                     onSubmit={handleSubmit}
                                     className="flex flex-col gap-6"
                                 >
 
-                                    {/* EMAIL */}
                                     <div className="flex flex-col gap-1.5">
 
                                         <label
@@ -290,7 +275,6 @@ const Login = () => {
 
                                     </div>
 
-                                    {/* PASSWORD */}
                                     <div className="flex flex-col gap-1.5">
 
                                         <label
@@ -344,7 +328,6 @@ const Login = () => {
 
                                     </div>
 
-                                    {/* LOGIN BUTTON */}
                                     <button
                                         type="submit"
                                         disabled={loading}
@@ -376,9 +359,29 @@ const Login = () => {
 
                                     </button>
 
+<div className="flex items-center gap-4 my-1">
+    <div className="flex-1 h-px bg-surface-container-high" />
+    <span className="text-xs text-outline uppercase tracking-wider">
+        Or continue with
+    </span>
+    <div className="flex-1 h-px bg-surface-container-high" />
+</div>
+
+<a
+    href="/api/auth/google"
+    className="w-full h-12 bg-white text-black rounded-full text-sm font-semibold flex items-center justify-center gap-3 border border-white/10 hover:bg-gray-100 active:scale-[0.99] transition-all duration-150"
+>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M21.805 12.23c0-.79-.065-1.55-.207-2.28H12v4.32h5.49a4.69 4.69 0 0 1-2.04 3.08v2.56h3.3c1.93-1.78 3.055-4.4 3.055-7.68Z" fill="#4285F4"/>
+        <path d="M12 22c2.76 0 5.077-.91 6.77-2.47l-3.3-2.56c-.91.61-2.07.98-3.47.98-2.67 0-4.93-1.8-5.74-4.22H2.85v2.64A10.23 10.23 0 0 0 12 22Z" fill="#34A853"/>
+        <path d="M6.26 13.73A6.15 6.15 0 0 1 5.94 12c0-.6.11-1.18.32-1.73V7.63H2.85A10.01 10.01 0 0 0 1.75 12c0 1.61.39 3.13 1.1 4.37l3.41-2.64Z" fill="#FBBC05"/>
+        <path d="M12 6.05c1.5 0 2.84.52 3.9 1.54l2.92-2.92C17.07 3.04 14.76 2 12 2a10.23 10.23 0 0 0-9.15 5.63l3.41 2.64C7.07 7.85 9.33 6.05 12 6.05Z" fill="#EA4335"/>
+    </svg>
+    Continue with Google
+</a>
+
                                 </form>
 
-                                {/* REGISTER LINK */}
                                 <div className="mt-8 text-center">
 
                                     <p className="text-sm text-on-surface-variant">
@@ -394,7 +397,6 @@ const Login = () => {
 
                                 </div>
 
-                                {/* SECURITY */}
                                 <div className="mt-8 flex items-center justify-center gap-1.5 text-outline text-xs">
 
                                     <span
@@ -415,7 +417,7 @@ const Login = () => {
                         <div className="px-4 sm:px-8 lg:px-10 py-6 border-t border-surface-container-high text-center">
 
                             <p className="text-xs text-outline uppercase tracking-widest">
-                                Snitch Studio © 2025
+                                Snitch Studio © 2026
                             </p>
 
                         </div>
