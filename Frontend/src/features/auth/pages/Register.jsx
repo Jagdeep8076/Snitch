@@ -379,7 +379,7 @@ const Register = () => {
 </div>
 
 <a
-    href="/api/auth/google"
+     href="http://localhost:3000/api/auth/google"
     className="w-full h-12 bg-white text-black rounded-full text-sm font-semibold flex items-center justify-center gap-3 border border-white/10 hover:bg-gray-100 active:scale-[0.99] transition-all duration-150"
 >
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

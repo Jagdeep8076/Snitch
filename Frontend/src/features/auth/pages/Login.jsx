@@ -70,24 +70,24 @@ const Login = () => {
                                 className="material-symbols-outlined text-on-surface-variant"
                                 style={{ fontSize: "20px" }}
                             >
-                                arrow_back
+                                
                             </span>
 
                             <span className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">
-                                Back to Snitch
+                                
                             </span>
                         </Link>
 
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-outline hidden sm:inline">
-                                New to Snitch?
+                               
                             </span>
 
                             <Link
                                 to="/register"
                                 className="text-sm font-semibold text-primary hover:underline underline-offset-4 transition-colors"
                             >
-                                Create Account
+                                
                             </Link>
                         </div>
 
@@ -368,7 +368,7 @@ const Login = () => {
 </div>
 
 <a
-    href="/api/auth/google"
+      href="http://localhost:3000/api/auth/google"
     className="w-full h-12 bg-white text-black rounded-full text-sm font-semibold flex items-center justify-center gap-3 border border-white/10 hover:bg-gray-100 active:scale-[0.99] transition-all duration-150"
 >
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
