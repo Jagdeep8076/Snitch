@@ -136,9 +136,52 @@ export const login = async (req, res) => {
     }
 };
 
-export const googleCallback = async (req, res) =>{
-    console.log(req.user)
+export const googleCallback = async (req, res) => {
+    try {
+        const email = req.user.emails?.[0]?.value;
+        const fullname = req.user.displayName;
 
-    res.redirect("http://localhost:5173/")
-}
+        if (!email) {
+            return res.redirect(
+                "http://localhost:5173/login?error=google-email-missing"
+            );
+        }
+
+        let user = await userModel.findOne({ email });
+
+        if (!user) {
+    user = await userModel.create({
+        email,
+        fullname,
+        googleId: req.user.id,
+        role: "buyer"
+            });
+        }
+
+        const token = jwt.sign(
+            {
+                id: user._id
+            },
+            config.JWT_SECRET,
+            {
+                expiresIn: "7d"
+            }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        return res.redirect("http://localhost:5173/");
+    } catch (error) {
+        console.error("GOOGLE AUTH ERROR:", error);
+
+        return res.redirect(
+            "http://localhost:5173/login?error=google-auth-failed"
+        );
+    }
+};
 

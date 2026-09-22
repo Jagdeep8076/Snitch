@@ -7,10 +7,14 @@ const userSchema = new mongoose.Schema(
             type: String, required: true, unique: true },
 
         contact: {
-            type: String, required: true },
+            type: String, required: false },
 
         password: {
-            type: String,required: true },
+            type: String,
+            required: function () {
+                return !this.googleId;
+            }
+         },
 
         fullname: {
             type: String, required: true },
@@ -20,18 +24,21 @@ const userSchema = new mongoose.Schema(
             enum: ["buyer", "seller"],
             default: "buyer"
         },
+        googleId : {
+            type: String,
+         },
 
         address: {
-            type: String, required: true },
+            type: String, required: false},
 
         city: {
-            type: String, required: true },
+            type: String, required: false },
 
         state: {
-            type: String, required: true },
+            type: String, required: false },
 
         pincode: {
-            type: String, required: true }
+            type: String, required: false }
     },
     {
         timestamps: true
