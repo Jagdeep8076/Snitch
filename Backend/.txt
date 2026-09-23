@@ -30,3 +30,93 @@ Generate JWT
 Store JWT in HTTP-only Cookie
        ↓
 Send user data
+
+
+
+
+
+
+
+
+
+
+
+
+
+# SNITCH PROJECT — AUTHENTICATION FLOW
+
+## CURRENT GOAL
+
+Snitch mein complete authentication system banana hai:
+
+1. Normal Register
+
+2. Normal Login
+
+3. Google OAuth Register
+
+4. Google OAuth Login
+
+5. Email Verification
+
+6. JWT + HTTP-only Cookie
+
+7. Protected Route
+
+8. Protected Dashboard
+
+9. Success/Error Popups
+
+10. Cancel handling
+
+11. PROTECTED DASHBOARD
+
+---
+
+Dashboard directly public nahi hona chahiye.
+
+Example:
+
+/dashboard
+
+Dashboard ko ProtectedRoute ke andar rakhna hai.
+
+Flow:
+
+User → /dashboard
+↓
+ProtectedRoute
+↓
+JWT/Cookie verify
+↓
+Valid?
+YES → Dashboard
+NO  → Login
+
+2. NORMAL REGISTER
+
+---
+
+User Register page par details fill karega.
+
+Flow:
+
+Register
+↓
+Validate user data
+↓
+Save user in MongoDB
+↓
+Send verification email
+↓
+User email open karega
+↓
+Verify button/link click karega
+↓
+Email verified
+↓
+Registration successful
+↓
+JWT + Cookie
+↓
+Protecte
