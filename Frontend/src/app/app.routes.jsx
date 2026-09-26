@@ -4,6 +4,8 @@ import Home from "../features/home/pages/Home";
 import Register from "../features/auth/pages/Register";
 import Login from "../features/auth/pages/Login";
 import CreateProduct from "../features/products/pages/createProduct";
+import Dashboard from "../features/products/pages/Dashboard";
+
 
 const router = createBrowserRouter([
     {
@@ -22,8 +24,17 @@ const router = createBrowserRouter([
     },
 
     {
-        path: "/seller/products/create",
-        element: <CreateProduct />,
+        path: "/seller",
+        children: [
+            {
+                path: "/seller/products/create",
+                element: <CreateProduct />
+            },
+            {
+                path:"/seller/dashboard",
+                element: <Dashboard />
+            }
+        ]
     },
 ]);
 

@@ -6,7 +6,8 @@ import {
 
 import {
     register,
-    login
+    login,
+    getMe
 } from "../service/auth.api.js";
 
 import { useDispatch } from "react-redux";
@@ -15,9 +16,7 @@ export const useAuth = () => {
 
     const dispatch = useDispatch();
 
-    // =========================
-    // REGISTER
-    // =========================
+
     async function handleRegister({
         email,
         contact,
@@ -30,6 +29,7 @@ export const useAuth = () => {
         isSeller = false
     }) {
         try {
+
             dispatch(setLoading(true));
             dispatch(setError(null));
 
@@ -47,7 +47,6 @@ export const useAuth = () => {
 
             console.log("REGISTER SUCCESS:", data);
 
-            // Register ke baad user ko logged-in mat karo
             return data;
 
         } catch (error) {
@@ -64,9 +63,12 @@ export const useAuth = () => {
             return null;
 
         } finally {
+
             dispatch(setLoading(false));
+
         }
     }
+
 
     async function handleLogin({ email, password }) {
 
@@ -82,7 +84,6 @@ export const useAuth = () => {
 
             console.log("LOGIN SUCCESS:", data);
 
-            // Sirf LOGIN ke baad user Redux mein jayega
             dispatch(setUser(data));
 
             return data;
@@ -101,13 +102,54 @@ export const useAuth = () => {
             return null;
 
         } finally {
+
             dispatch(setLoading(false));
+
         }
     }
 
 
+   
+    async function handleGetMe() {
+
+        try {
+
+            dispatch(setLoading(true));
+
+            const data = await getMe();
+
+            console.log("GET ME SUCCESS:", data);
+
+            dispatch(setUser(data.user));
+
+            return data;
+
+        } catch (err) {
+
+            console.error("GET ME ERROR:", err);
+
+            dispatch(
+                setError(
+                    err.response?.data?.message ||
+                    "Failed to fetch user"
+                )
+            );
+
+            return null;
+
+        } finally {
+
+            dispatch(setLoading(false));
+
+        }
+    }
+
+
+   
     return {
         handleRegister,
-        handleLogin
+        handleLogin,
+        handleGetMe
     };
 };
+

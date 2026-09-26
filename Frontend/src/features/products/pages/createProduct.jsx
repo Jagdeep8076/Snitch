@@ -138,7 +138,7 @@ const CreateProduct = () => {
         if (img) fd.append("images", img);
       });
       await handleCreateProduct(fd);
-      navigate("/home"); // redirect to home after successful upload
+      navigate("/"); // redirect to home after successful upload
     } finally {
       setIsSubmitting(false);
     }
