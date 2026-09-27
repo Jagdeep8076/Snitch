@@ -1,16 +1,17 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import Home from "../features/home/pages/Home";
+import Home from "../features/products/pages/Home";
 import Register from "../features/auth/pages/Register";
 import Login from "../features/auth/pages/Login";
 import CreateProduct from "../features/products/pages/createProduct";
 import Dashboard from "../features/products/pages/Dashboard";
+import Protected from "../features/auth/components/Protected";
 
 
 const router = createBrowserRouter([
     {
         path: "/",
-        element:  <Home />
+        element: <Home />
     },
 
     {
@@ -28,11 +29,15 @@ const router = createBrowserRouter([
         children: [
             {
                 path: "/seller/products/create",
-                element: <CreateProduct />
+                element: <Protected
+                      role="seller">
+                    <CreateProduct /></Protected>
             },
             {
                 path:"/seller/dashboard",
-                element: <Dashboard />
+                element: <Protected role="seller">
+                    <Dashboard />
+                </Protected>
             }
         ]
     },

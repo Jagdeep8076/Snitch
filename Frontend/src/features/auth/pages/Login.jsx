@@ -30,22 +30,27 @@ const Login = () => {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        const data = await handleLogin({
+    try {
+        const user = await handleLogin({
             email: formData.email,
-            password: formData.password,
+            password: formData.password
         });
 
-        if (data?.success) {
-            console.log("LOGIN SUCCESS → HOME");
+        if (!user) return;
 
-            navigate("/", {
-                replace: true,
-            });
+        if (user.role === "buyer") {
+            navigate("/");
+        } else if (user.role === "seller") {
+            navigate("/seller/dashboard");
         }
-    };
+
+    } catch (err) {
+        console.log("Login Failed", err);
+    }
+};
 
     return (
         <div className="bg-background text-on-surface min-h-screen antialiased font-[Plus_Jakarta_Sans]">
