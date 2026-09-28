@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useProduct } from "../hook/useProduct.js";
 import gsap from "gsap";
 import * as THREE from "three";
@@ -12,6 +13,7 @@ const HeroCanvas = () => {
   useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
+
 
     /* ── Renderer ── */
     const renderer = new THREE.WebGLRenderer({
@@ -56,7 +58,6 @@ const HeroCanvas = () => {
     const ico = new THREE.Mesh(icoGeo, icoMat);
     scene.add(ico);
 
-    /* ── Particle Field ── */
     const PARTICLE_COUNT = 600;
     const particleGeo = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
@@ -171,10 +172,10 @@ const HeroCanvas = () => {
   );
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRODUCT CARD
-═══════════════════════════════════════════════════════════════════════════ */
+
 const ProductCard = ({ product, index }) => {
+    const navigate = useNavigate()
+    
   const cardRef = useRef(null);
   const coverImage =
     product.images?.[0]?.url || product.images?.[0] || product.image || null;
@@ -192,6 +193,7 @@ const ProductCard = ({ product, index }) => {
 
   return (
     <div
+    onClick={() => navigate(`/product/${product._id}`)}
       ref={cardRef}
       className="home-product-card group relative rounded-2xl border border-white/[0.06] overflow-hidden transition-all duration-500 hover:border-white/20"
       style={{
