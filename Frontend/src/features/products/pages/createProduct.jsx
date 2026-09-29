@@ -83,9 +83,7 @@ const ImageSlot = ({ index, file, onAdd, onRemove }) => {
   );
 };
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   MAIN CREATE PRODUCT PAGE
-───────────────────────────────────────────────────────────────────────────── */
+
 const CreateProduct = () => {
   const { handleCreateProduct } = useProduct();
   const navigate = useNavigate();
@@ -182,6 +180,7 @@ const CreateProduct = () => {
   }
 
   return (
+  
     <div className="bg-background text-on-surface min-h-screen antialiased font-[Plus_Jakarta_Sans]">
       {/* ── Three.js Background ── */}
       <ThreeBackground variant="register" />
