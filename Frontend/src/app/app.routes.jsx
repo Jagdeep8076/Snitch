@@ -46,7 +46,7 @@ const router = createBrowserRouter([
                 </Protected>
             },
             {
-               path: "seller/product/:productId",
+               path: "/seller/product/:productId",
                element: <Protected role="seller">
                 <SellerProductDetail />
                </Protected>
