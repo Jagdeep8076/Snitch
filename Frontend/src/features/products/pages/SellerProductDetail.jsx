@@ -382,7 +382,7 @@ const SellerProductDetail = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider text-secondary mb-2">Price Amount</label>
-                                    <input type="number" required min="0" value={newVariant.price.amount} onChange={e => setNewVariant(p => ({...p, price: {...p.price, amount: e.target.value}}))} className="w-full h-10 bg-background border border-surface-container-high rounded-lg px-3 text-sm text-on-surface outline-none focus:border-primary" />
+                                    <input type="number" min="0" value={newVariant.price.amount} onChange={e => setNewVariant(p => ({...p, price: {...p.price, amount: e.target.value}}))} className="w-full h-10 bg-background border border-surface-container-high rounded-lg px-3 text-sm text-on-surface outline-none focus:border-primary" />
                                 </div>
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider text-secondary mb-2">Currency</label>

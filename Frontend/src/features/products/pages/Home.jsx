@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useProduct } from "../hook/useProduct.js";
+import { logout as logoutApi } from "../../auth/service/auth.api.js";
+import { setUser } from "../../auth/state/auth.slice.js";
 import gsap from "gsap";
 import * as THREE from "three";
 
@@ -376,10 +378,23 @@ const Home = () => {
   const products = useSelector((state) => state.product.products);
   const user = useSelector((state) => state.auth.user);
   const { handleGetAllProducts } = useProduct();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+      dispatch(setUser(null));
+      setShowUserMenu(false);
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout error", err);
+    }
+  };
 
   const heroRef = useRef(null);
   const heroTitleRef = useRef(null);
@@ -822,7 +837,9 @@ const Home = () => {
 
                     {/* Logout */}
                     <div className="p-2 pt-0 border-t border-white/[0.04] mt-1">
-                      <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-red-400/70 hover:text-red-400 hover:bg-red-400/[0.06] transition-all duration-150 mt-1">
+                      <button 
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-red-400/70 hover:text-red-400 hover:bg-red-400/[0.06] transition-all duration-150 mt-1">
                         <span
                           className="material-symbols-outlined"
                           style={{ fontSize: "18px" }}

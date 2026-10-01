@@ -25,9 +25,8 @@ const ProductDetail = () => {
     }, [productId]);
 
     useEffect(() => {
-        if (product?.variants?.length > 0) {
-            setSelectedAttributes(product.variants[0].attributes || {});
-        }
+        // We used to pre-select here. Now we do nothing to keep the hook order intact!
+        // This allows the user to see the base product first and select a variant manually.
     }, [product]);
 
     const activeVariant = useMemo(() => {
@@ -75,39 +74,19 @@ const ProductDetail = () => {
     const handleAttributeChange = (attrName, value) => {
         if (!product?.variants) return;
 
-        const newAttrs = {
-            ...selectedAttributes,
-            [attrName]: value
-        };
-
-        const exactMatch = product.variants.find(v => {
-            const vAttrs = v.attributes || {};
-
-            return (
-                Object.keys(newAttrs).every(
-                    key => newAttrs[key] === vAttrs[key]
-                ) &&
-                Object.keys(vAttrs).every(
-                    key => newAttrs[key] === vAttrs[key]
-                )
-            );
-        });
-
-        if (exactMatch) {
-            setSelectedAttributes(exactMatch.attributes);
-        } else {
-            const fallbackVariant = product.variants.find(
-                v =>
-                    v.attributes &&
-                    v.attributes[attrName] === value
-            );
-
-            if (fallbackVariant) {
-                setSelectedAttributes(fallbackVariant.attributes);
-            } else {
-                setSelectedAttributes(newAttrs);
+        setSelectedAttributes(prev => {
+            if (prev[attrName] === value) {
+                // Toggle off if already selected
+                const newAttrs = { ...prev };
+                delete newAttrs[attrName];
+                return newAttrs;
             }
-        }
+            // Select new
+            return {
+                ...prev,
+                [attrName]: value
+            };
+        });
     };
 
     if (!product) {
@@ -120,17 +99,57 @@ const ProductDetail = () => {
         );
     }
 
-    const displayImages =
-        activeVariant?.images?.length > 0
-            ? activeVariant.images
-            : product.images?.length > 0
-                ? product.images
-                : [{ url: '/snitch_editorial_warm.png' }];
+    const partialMatchVariant = (() => {
+        if (!product?.variants || Object.keys(selectedAttributes).length === 0) return null;
+        return product.variants.find(v => {
+            if (!v.attributes) return false;
+            return Object.entries(selectedAttributes).every(([k, val]) => v.attributes[k] === val);
+        });
+    })();
 
-    const displayPrice =
-        activeVariant?.price?.amount
-            ? activeVariant.price
-            : product.price;
+    const displayImages = (() => {
+        const imagesMap = new Map();
+        
+        const matchVariant = activeVariant || partialMatchVariant;
+        
+        if (matchVariant?.images?.length > 0) {
+            matchVariant.images.forEach(img => imagesMap.set(img.url, img));
+        }
+
+        if (product?.images?.length > 0) {
+            product.images.forEach(img => {
+                if (!imagesMap.has(img.url)) {
+                    imagesMap.set(img.url, img);
+                }
+            });
+        }
+
+        const combined = Array.from(imagesMap.values());
+        return combined.length > 0 ? combined : [{ url: '/snitch_editorial_warm.png' }];
+    })();
+
+    const displayPrice = activeVariant?.price?.amount
+        ? activeVariant.price
+        : product.price;
+
+    const missingAttributes = Object.keys(availableAttributes).filter(
+        attr => !selectedAttributes[attr]
+    );
+
+    const isAddToCartDisabled = product?.variants?.length > 0 && 
+        (missingAttributes.length > 0 || (activeVariant && activeVariant.stock <= 0));
+
+    const getAddToCartText = () => {
+        if (product?.variants?.length > 0) {
+            if (missingAttributes.length > 0) {
+                return `Please select a ${missingAttributes[0]}`;
+            }
+            if (activeVariant && activeVariant.stock <= 0) {
+                return 'Out of Stock';
+            }
+        }
+        return 'Buy Now';
+    };
 
     return (
         <div className="min-h-screen pb-24 bg-background text-on-surface antialiased font-[Plus_Jakarta_Sans]">
@@ -229,21 +248,32 @@ const ProductDetail = () => {
                             ([attrName, values]) => (
                                 <div key={attrName} className="mb-6">
                                     <h3 className="text-xs uppercase tracking-[0.24em] font-semibold mb-3 text-secondary">
-                                        {attrName}
+                                        {attrName}: <span className="text-on-surface">{selectedAttributes[attrName] || ""}</span>
                                     </h3>
 
                                     <div className="flex flex-wrap gap-2">
                                         {values.map(value => {
                                             const isSelected = selectedAttributes[attrName] === value;
 
+                                            const isValid = product.variants.some(v => {
+                                                if (!v.attributes || v.attributes[attrName] !== value) return false;
+                                                return Object.entries(selectedAttributes).every(([k, selectedVal]) => {
+                                                    if (k === attrName) return true;
+                                                    return v.attributes[k] === selectedVal;
+                                                });
+                                            });
+
                                             return (
                                                 <button
                                                     key={value}
+                                                    disabled={!isValid}
                                                     onClick={() => handleAttributeChange(attrName, value)}
                                                     className={`px-4 py-2.5 text-[11px] uppercase tracking-[0.15em] font-bold transition-all duration-200 rounded-full border ${
                                                         isSelected
                                                             ? 'bg-primary text-on-primary border-primary'
-                                                            : 'bg-surface-container text-on-surface border-surface-container-high hover:border-outline hover:bg-surface-container-high'
+                                                            : isValid
+                                                                ? 'bg-surface-container text-on-surface border-surface-container-high hover:border-outline hover:bg-surface-container-high'
+                                                                : 'bg-surface-container/50 text-on-surface/30 border-surface-container-high/30 cursor-not-allowed opacity-50 line-through'
                                                     }`}
                                                 >
                                                     {value}
@@ -255,14 +285,14 @@ const ProductDetail = () => {
                             )
                         )}
 
-                        {activeVariant && activeVariant.stock !== undefined && (
+                        {activeVariant ? (
                             <div className="mb-6 flex items-center gap-2">
                                 <span className={`w-2 h-2 rounded-full ${activeVariant.stock > 0 ? 'bg-emerald-500' : 'bg-error'}`} />
                                 <span className={`text-[11px] uppercase tracking-[0.1em] font-bold ${activeVariant.stock > 0 ? 'text-emerald-500' : 'text-error'}`}>
-                                    {activeVariant.stock > 0 ? `${activeVariant.stock} in stock` : 'Out of stock'}
+                                    {activeVariant.stock > 0 ? `Only ${activeVariant.stock} left in stock` : 'Out of stock'}
                                 </span>
                             </div>
-                        )}
+                        ) : null}
 
                         <div className="mb-12">
                             <h3 className="text-xs uppercase tracking-[0.24em] font-semibold mb-4 text-secondary">
@@ -274,8 +304,15 @@ const ProductDetail = () => {
                         </div>
 
                         <div className="flex flex-col gap-4 mt-auto">
-                            <button className="w-full h-12 bg-primary text-on-primary rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-sm hover:opacity-90 active:scale-[0.99] transition-all duration-150">
-                                Buy Now
+                            <button 
+                                disabled={isAddToCartDisabled}
+                                className={`w-full h-12 rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-sm transition-all duration-150 ${
+                                    isAddToCartDisabled 
+                                        ? 'bg-surface-container-high text-on-surface/50 cursor-not-allowed border border-surface-container-high' 
+                                        : 'bg-primary text-on-primary hover:opacity-90 active:scale-[0.99]'
+                                }`}
+                            >
+                                {getAddToCartText()}
                             </button>
 
                             <button
