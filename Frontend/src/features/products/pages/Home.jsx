@@ -202,8 +202,7 @@ const ProductCard = ({ product, index }) => {
         background: "rgba(24,24,28,0.65)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
-      }}
-    >
+      }}>
       {/* Image */}
       <div className="relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
         {coverImage ? (

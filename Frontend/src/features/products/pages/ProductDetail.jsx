@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useParams } from "react-router-dom";
 import { useProduct } from '../hook/useProduct.js'
-import gsap from 'gsap'
+import { useCart } from '../../cart/hook/useCart.js';
+
+
 
 const ProductDetail = () => {
     const { productId } = useParams();
@@ -10,6 +12,8 @@ const ProductDetail = () => {
     const [selectedAttributes, setSelectedAttributes] = useState({});
     const navigate = useNavigate();
     const { handleGetProductById } = useProduct();
+    const {handleAddItem } = useCart()
+
 
     async function fetchProductDetails() {
         try {
@@ -25,8 +29,9 @@ const ProductDetail = () => {
     }, [productId]);
 
     useEffect(() => {
-        // We used to pre-select here. Now we do nothing to keep the hook order intact!
-        // This allows the user to see the base product first and select a variant manually.
+        if (product?.variants?.length > 0) {
+            setSelectedAttributes(product.variants[0].attributes || {});
+        }
     }, [product]);
 
     const activeVariant = useMemo(() => {
@@ -76,12 +81,10 @@ const ProductDetail = () => {
 
         setSelectedAttributes(prev => {
             if (prev[attrName] === value) {
-                // Toggle off if already selected
-                const newAttrs = { ...prev };
+                        const newAttrs = { ...prev };
                 delete newAttrs[attrName];
                 return newAttrs;
             }
-            // Select new
             return {
                 ...prev,
                 [attrName]: value
@@ -132,23 +135,26 @@ const ProductDetail = () => {
         ? activeVariant.price
         : product.price;
 
-    const missingAttributes = Object.keys(availableAttributes).filter(
-        attr => !selectedAttributes[attr]
-    );
+    const isOutOfStock =
+        Boolean(activeVariant) && Number(activeVariant.stock) <= 0;
 
-    const isAddToCartDisabled = product?.variants?.length > 0 && 
-        (missingAttributes.length > 0 || (activeVariant && activeVariant.stock <= 0));
+    const handleAddToCart = async () => {
+        if (!product?._id || !activeVariant?._id || isOutOfStock) return;
+
+        try {
+            await handleAddItem({
+                productId: product._id,
+                variantId: activeVariant._id,
+                quantity: 1
+            });
+        } catch (error) {
+            console.error("Failed to add item to cart:", error);
+        }
+    };
 
     const getAddToCartText = () => {
-        if (product?.variants?.length > 0) {
-            if (missingAttributes.length > 0) {
-                return `Please select a ${missingAttributes[0]}`;
-            }
-            if (activeVariant && activeVariant.stock <= 0) {
-                return 'Out of Stock';
-            }
-        }
-        return 'Buy Now';
+        if (isOutOfStock) return "Out of Stock";
+        return "Add to Cart";
     };
 
     return (
@@ -304,11 +310,13 @@ const ProductDetail = () => {
                         </div>
 
                         <div className="flex flex-col gap-4 mt-auto">
-                            <button 
-                                disabled={isAddToCartDisabled}
+                            <button
+                                type="button"
+                                disabled={!activeVariant || isOutOfStock}
+                                onClick={handleAddToCart}
                                 className={`w-full h-12 rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-sm transition-all duration-150 ${
-                                    isAddToCartDisabled 
-                                        ? 'bg-surface-container-high text-on-surface/50 cursor-not-allowed border border-surface-container-high' 
+                                    !activeVariant || isOutOfStock
+                                        ? 'bg-surface-container-high text-on-surface/50 cursor-not-allowed border border-surface-container-high'
                                         : 'bg-primary text-on-primary hover:opacity-90 active:scale-[0.99]'
                                 }`}
                             >
