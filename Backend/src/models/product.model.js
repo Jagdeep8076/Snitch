@@ -20,10 +20,8 @@ const productSchema = new mongoose.Schema(
         },
 
         price: {
-            amount: {
-                type: priceSchema,
-                required: true,
-            },
+            type: priceSchema,
+            required: true,
         },
 
         images: [
@@ -57,9 +55,7 @@ const productSchema = new mongoose.Schema(
                 },
 
                 price: {
-                    amount: {
-                        type: priceSchema,
-                    },
+                    type: priceSchema,
                 },
             },
         ],
