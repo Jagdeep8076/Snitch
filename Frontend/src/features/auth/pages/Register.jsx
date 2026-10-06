@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../hook/useAuth";
 import ThreeBackground from "../../../components/ThreeBackground";
 import StudioPass3D from "../../../components/StudioPass3D";
@@ -54,13 +55,13 @@ const Register = () => {
 
         <header className="sticky top-0 z-50 border-b border-white/5 backdrop-blur-2xl" style={{ background: "rgba(17,17,19,0.72)" }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-            <a href="/" className="flex items-center gap-1.5">
+            <Link to="/" className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "20px" }}>arrow_back</span>
               <span className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">Back to Snitch</span>
-            </a>
+            </Link>
             <div className="flex items-center gap-2">
               <span className="text-xs text-outline hidden sm:inline">Already a member?</span>
-              <a href="#" className="text-sm font-semibold text-primary hover:underline underline-offset-4 transition-colors">Sign In</a>
+              <Link to="/login" className="text-sm font-semibold text-primary hover:underline underline-offset-4 transition-colors">Sign In</Link>
             </div>
           </div>
         </header>

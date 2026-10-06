@@ -8,51 +8,68 @@ import Dashboard from "../features/products/pages/Dashboard";
 import Protected from "../features/auth/components/Protected";
 import ProductDetail from "../features/products/pages/ProductDetail";
 import SellerProductDetail from "../features/products/pages/SellerProductDetail";
-
+import Cart from "../features/cart/pages/Cart";
+import AppLayout from "./Applayout";
 
 const router = createBrowserRouter([
-    {
+  {
+    path: "/register",
+    element: <Register />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    element: <AppLayout />,
+    children: [
+      {
         path: "/",
-        element: <Home />
-    },
-
-    {
-        path: "/register",
-        element: <Register />,
-    },
-
-    {
-        path: "/login",
-        element: <Login />,
-    },
-    {
+        element: <Home />,
+      },
+      {
         path: "/product/:productId",
-        element: <ProductDetail />
-    },
-
-    {
+        element: <ProductDetail />,
+      },
+      {
+        path: "/cart",
+        element: (
+          <Protected>
+            <Cart />
+          </Protected>
+        ),
+      },
+      {
         path: "/seller",
         children: [
-            {
-                path: "/seller/products/create",
-                element: <Protected
-                      role="seller">
-                    <CreateProduct /></Protected>
-            },
-            {
-                path:"/seller/dashboard",
-                element: <Protected role="seller">
-                    <Dashboard />
-                </Protected>
-            },
-            {
-               path: "/seller/product/:productId",
-               element: <Protected role="seller">
+          {
+            path: "/seller/products/create",
+            element: (
+              <Protected role="seller">
+                <CreateProduct />
+              </Protected>
+            ),
+          },
+          {
+            path: "/seller/dashboard",
+            element: (
+              <Protected role="seller">
+                <Dashboard />
+              </Protected>
+            ),
+          },
+          {
+            path: "/seller/product/:productId",
+            element: (
+              <Protected role="seller">
                 <SellerProductDetail />
-               </Protected>
-            }
-        ]
-    },
+              </Protected>
+            ),
+          },
+        ],
+      },
+    ],
+  },
 ]);
 
 export default router;

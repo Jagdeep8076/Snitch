@@ -637,7 +637,8 @@ const Home = () => {
             </button>
 
             {/* Cart */}
-            <button
+            <Link
+              to="/cart"
               className="w-9 h-9 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.06] transition-all duration-200 relative"
               title="Cart"
             >
@@ -647,7 +648,7 @@ const Home = () => {
               >
                 shopping_bag
               </span>
-            </button>
+            </Link>
 
             {/* Auth / User Profile */}
             {user ? (
