@@ -1,5 +1,5 @@
 import React from 'react'
-import Nav from '../features/Shared/Components/nav'
+import Nav from '../features/Shared/Components/Nav'
 import { Outlet } from 'react-router-dom'
 
 

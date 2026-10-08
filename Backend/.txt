@@ -120,3 +120,51 @@ Registration successful
 JWT + Cookie
 ↓
 Protecte
+
+
+
+
+ <header
+        ref={navRef}
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{
+          background: "rgba(17,17,19,0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255,255,255,0.04)",
+        }}
+      >
+        <div className="max-w-lg mx-auto px-4 h-16 flex items-center justify-between">
+          {/* Back + Title */}
+          <div className="flex items-center gap-3">
+            <button
+              id="cart-back-btn"
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-white/[0.06]"
+              style={{ color: "rgba(255,255,255,0.6)" }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
+                arrow_back
+              </span>
+            </button>
+            <h1 className="text-lg font-semibold text-white tracking-tight">
+              My Cart
+            </h1>
+          </div>
+
+          {/* Cart badge */}
+          {itemCount > 0 && (
+            <div className="relative">
+              <span className="material-symbols-outlined text-white/60" style={{ fontSize: 22 }}>
+                shopping_bag
+              </span>
+              <span
+                className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-black"
+                style={{ background: "#ffffff", padding: "0 3px" }}
+              >
+                {itemCount}
+              </span>
+            </div>
+          )}
+        </div>
+      </header> 

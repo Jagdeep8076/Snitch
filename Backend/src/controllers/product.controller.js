@@ -61,13 +61,23 @@ export async function getSellerProducts(req, res) {
 }
 
 export async function getAllProducts(req, res){
-    const products = await productModel.find()
-    
-    return res.status(200).json({
-        message: "Products Fetched Succesfully",
-        success: true,
-        products
-    })
+    try {
+        const { sort } = req.query;
+        const sortOption = sort === "newest" ? { createdAt: -1 } : {};
+        const products = await productModel.find().sort(sortOption);
+        
+        return res.status(200).json({
+            message: "Products Fetched Successfully",
+            success: true,
+            products
+        });
+    } catch (error) {
+        console.error("GET ALL PRODUCTS ERROR:", error);
+        return res.status(500).json({
+            message: "Failed to fetch products",
+            success: false
+        });
+    }
 }
 export async function getProductDetails(req, res){
     const { id } = req.params;

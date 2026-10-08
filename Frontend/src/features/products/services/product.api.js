@@ -21,8 +21,10 @@
     return response.data
  }
 
- export async function getAllProducts() {
-   const response = await  productApiInstance.get("/")
+ export async function getAllProducts({ sort } = {}) {
+   const params = {};
+   if (sort) params.sort = sort;
+   const response = await productApiInstance.get("/", { params })
 
    return response.data
  }

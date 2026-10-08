@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useProduct } from "../hook/useProduct.js";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import Nav from "../../Shared/Components/nav.jsx";
 import gsap from "gsap";
 
 /* ─────────────────────────────────────────────
@@ -201,28 +202,9 @@ const Dashboard = () => {
         <div className="absolute bottom-0 left-1/3 w-72 h-72 rounded-full bg-tertiary/5 blur-3xl" />
       </div>
 
-      {/* Nav */}
-      <header
-        className="sticky top-0 z-50 border-b border-white/5 backdrop-blur-2xl"
-        style={{ background: "rgba(17,17,19,0.82)" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "20px" }}>arrow_back</span>
-            <span className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">Back to Snitch</span>
-          </Link>
-          <span className="text-sm font-bold text-on-surface tracking-tight">Snitch</span>
-          <Link
-            to="/seller/products/create"
-            className="flex items-center gap-1.5 h-8 px-4 bg-primary text-on-primary rounded-full text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "15px" }}>add</span>
-            New Product
-          </Link>
-        </div>
-      </header>
+      <Nav />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
 
         {/* Page Header */}
         <div ref={headerRef} className="mb-10">

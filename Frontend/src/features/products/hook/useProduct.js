@@ -17,10 +17,11 @@ export const useProduct = () => {
         return data.products
     }
 
-    async function handleGetAllProducts() {
+    async function handleGetAllProducts({ sort } = {}) {
 
-        const data = await getAllProducts()
+        const data = await getAllProducts({ sort })
         dispatch(setProducts(data.products))
+        return data.products
     }
 
     async function handleGetProductById(productId) {

@@ -1,24 +1,32 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from "react-router-dom";
 import { useProduct } from '../hook/useProduct.js'
 import { useCart } from '../../cart/hook/useCart.js';
 
-
+const ADD_TO_CART_STATES = {
+    IDLE: "idle",
+    LOADING: "loading",
+    SUCCESS: "success",
+    ERROR: "error",
+};
 
 const ProductDetail = () => {
     const { productId } = useParams();
     const [product, setProduct] = useState(null);
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedAttributes, setSelectedAttributes] = useState({});
+    const [addToCartState, setAddToCartState] = useState(ADD_TO_CART_STATES.IDLE);
+    const [addToCartMsg, setAddToCartMsg] = useState("");
     const navigate = useNavigate();
     const { handleGetProductById } = useProduct();
-    const {handleAddItem } = useCart()
-
+    const { handleAddItem } = useCart();
+    const feedbackTimerRef = useRef(null);
 
     async function fetchProductDetails() {
         try {
-            const data = await handleGetProductById(productId);
-            setProduct(data?.product || data);
+            // handleGetProductById already returns data.product (the product object)
+            const productData = await handleGetProductById(productId);
+            setProduct(productData);
         } catch (error) {
             console.error("Failed to fetch product details", error);
         }
@@ -26,6 +34,9 @@ const ProductDetail = () => {
 
     useEffect(() => {
         fetchProductDetails();
+        return () => {
+            if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+        };
     }, [productId]);
 
     useEffect(() => {
@@ -81,7 +92,7 @@ const ProductDetail = () => {
 
         setSelectedAttributes(prev => {
             if (prev[attrName] === value) {
-                        const newAttrs = { ...prev };
+                const newAttrs = { ...prev };
                 delete newAttrs[attrName];
                 return newAttrs;
             }
@@ -140,21 +151,63 @@ const ProductDetail = () => {
 
     const handleAddToCart = async () => {
         if (!product?._id || !activeVariant?._id || isOutOfStock) return;
+        if (addToCartState === ADD_TO_CART_STATES.LOADING) return;
 
         try {
-            await handleAddItem({
+            setAddToCartState(ADD_TO_CART_STATES.LOADING);
+            setAddToCartMsg("");
+
+            const data = await handleAddItem({
                 productId: product._id,
                 variantId: activeVariant._id,
                 quantity: 1
             });
+
+            if (data?.success) {
+                setAddToCartState(ADD_TO_CART_STATES.SUCCESS);
+                setAddToCartMsg("Added to cart ✓");
+            } else {
+                throw new Error(data?.message || "Failed to add to cart");
+            }
         } catch (error) {
             console.error("Failed to add item to cart:", error);
+            const msg = error?.response?.data?.message || error?.message || "Failed to add to cart";
+            setAddToCartState(ADD_TO_CART_STATES.ERROR);
+            setAddToCartMsg(msg);
+        } finally {
+            // Reset state after 3 seconds
+            feedbackTimerRef.current = setTimeout(() => {
+                setAddToCartState(ADD_TO_CART_STATES.IDLE);
+                setAddToCartMsg("");
+            }, 3000);
         }
     };
 
     const getAddToCartText = () => {
         if (isOutOfStock) return "Out of Stock";
-        return "Add to Cart";
+        switch (addToCartState) {
+            case ADD_TO_CART_STATES.LOADING: return "Adding...";
+            case ADD_TO_CART_STATES.SUCCESS: return "Added ✓";
+            case ADD_TO_CART_STATES.ERROR: return "Failed — Try Again";
+            default: return "Add to Cart";
+        }
+    };
+
+    const getAddToCartBtnClass = () => {
+        const base = "w-full h-12 rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-sm transition-all duration-150 ";
+        if (!activeVariant || isOutOfStock) {
+            return base + "bg-surface-container-high text-on-surface/50 cursor-not-allowed border border-surface-container-high";
+        }
+        if (addToCartState === ADD_TO_CART_STATES.SUCCESS) {
+            return base + "bg-emerald-600 text-white cursor-default";
+        }
+        if (addToCartState === ADD_TO_CART_STATES.ERROR) {
+            return base + "bg-red-600/80 text-white hover:opacity-90 active:scale-[0.99]";
+        }
+        if (addToCartState === ADD_TO_CART_STATES.LOADING) {
+            return base + "bg-primary text-on-primary opacity-70 cursor-wait";
+        }
+        return base + "bg-primary text-on-primary hover:opacity-90 active:scale-[0.99]";
     };
 
     return (
@@ -300,6 +353,19 @@ const ProductDetail = () => {
                             </div>
                         ) : null}
 
+                        {/* Add to Cart feedback message */}
+                        {addToCartMsg && (
+                            <div
+                                className={`mb-4 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                                    addToCartState === ADD_TO_CART_STATES.SUCCESS
+                                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-red-500/15 text-red-400 border border-red-500/20'
+                                }`}
+                            >
+                                {addToCartMsg}
+                            </div>
+                        )}
+
                         <div className="mb-12">
                             <h3 className="text-xs uppercase tracking-[0.24em] font-semibold mb-4 text-secondary">
                                 The Details
@@ -312,13 +378,9 @@ const ProductDetail = () => {
                         <div className="flex flex-col gap-4 mt-auto">
                             <button
                                 type="button"
-                                disabled={!activeVariant || isOutOfStock}
+                                disabled={!activeVariant || isOutOfStock || addToCartState === ADD_TO_CART_STATES.LOADING}
                                 onClick={handleAddToCart}
-                                className={`w-full h-12 rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-sm transition-all duration-150 ${
-                                    !activeVariant || isOutOfStock
-                                        ? 'bg-surface-container-high text-on-surface/50 cursor-not-allowed border border-surface-container-high'
-                                        : 'bg-primary text-on-primary hover:opacity-90 active:scale-[0.99]'
-                                }`}
+                                className={getAddToCartBtnClass()}
                             >
                                 {getAddToCartText()}
                             </button>
