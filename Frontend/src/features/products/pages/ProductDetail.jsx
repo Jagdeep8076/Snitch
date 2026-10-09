@@ -297,7 +297,9 @@ const ProductDetail = () => {
                         </h1>
 
                         <div className="mb-8 flex items-center gap-2 text-xl font-semibold text-on-surface">
-                            <span>{displayPrice?.currency}</span>
+                            <span>
+                                {{ "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}
+                            </span>
                             <span>{displayPrice?.amount?.toLocaleString()}</span>
                         </div>
 
