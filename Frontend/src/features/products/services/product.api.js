@@ -49,9 +49,27 @@
     formData.append("stock", newProductVariant.stock)
     formData.append("priceAmount", newProductVariant.price.amount)
     formData.append("priceCurrency", newProductVariant.price.currency)
+    if (newProductVariant.price.mrp) {
+        formData.append("mrp", newProductVariant.price.mrp)
+    }
     formData.append("attributes", JSON.stringify(newProductVariant.attributes))
 
     const response = await productApiInstance.post(`/${productId}/variants`, formData)
 
     return response.data
+}
+
+export async function updateVariantStock(productId, variantId, stock) {
+    const response = await productApiInstance.put(`/${productId}/variants/${variantId}/stock`, { stock });
+    return response.data;
+}
+
+export async function updateProductBasePrice(productId, amount, currency, mrp) {
+    const response = await productApiInstance.put(`/${productId}/price`, { amount, currency, mrp });
+    return response.data;
+}
+
+export async function updateVariantPrice(productId, variantId, amount, currency, mrp) {
+    const response = await productApiInstance.put(`/${productId}/variants/${variantId}/price`, { amount, currency, mrp });
+    return response.data;
 }

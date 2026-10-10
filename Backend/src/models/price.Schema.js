@@ -5,6 +5,10 @@ const  priceSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    mrp: {
+        type: Number,
+        default: null
+    },
      currency: {
                 type: String,
                 enum: ["USD","EUR","GBP","JPY","INR"],

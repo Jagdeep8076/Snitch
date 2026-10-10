@@ -5,11 +5,28 @@ import { useParams, useNavigate } from 'react-router-dom'
 const SellerProductDetail = () => {
     const { productId } = useParams()
     const navigate = useNavigate()
-    const { handleGetProductById, handleAddProductVariant } = useProduct()
+    const { handleGetProductById, handleAddProductVariant, handleUpdateVariantStock, handleUpdateProductBasePrice, handleUpdateVariantPrice } = useProduct()
 
     const [product, setProduct] = useState(null)
     const [activeImage, setActiveImage] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
+
+    // Base Price editing state
+    const [isEditingBasePrice, setIsEditingBasePrice] = useState(false);
+    const [editingBasePriceValue, setEditingBasePriceValue] = useState("");
+    const [editingBasePriceMrp, setEditingBasePriceMrp] = useState("");
+    const [isUpdatingBasePrice, setIsUpdatingBasePrice] = useState(false);
+
+    // Variant Price editing state
+    const [editingPriceVariantId, setEditingPriceVariantId] = useState(null);
+    const [editingPriceVariantValue, setEditingPriceVariantValue] = useState("");
+    const [editingPriceVariantMrp, setEditingPriceVariantMrp] = useState("");
+    const [isUpdatingVariantPrice, setIsUpdatingVariantPrice] = useState(false);
+
+    // Stock editing state
+    const [editingStockId, setEditingStockId] = useState(null);
+    const [editingStockValue, setEditingStockValue] = useState("");
+    const [isUpdatingStock, setIsUpdatingStock] = useState(false);
 
     // Variant Form State
     const [isVariantFormOpen, setIsVariantFormOpen] = useState(false)
@@ -17,7 +34,7 @@ const SellerProductDetail = () => {
     const [newVariant, setNewVariant] = useState({
         images: Array(7).fill(null),
         stock: "",
-        price: { amount: "", currency: "INR" },
+        price: { amount: "", currency: "INR", mrp: "" },
         attributes: {}
     })
     const [attrKey, setAttrKey] = useState("")
@@ -80,7 +97,7 @@ const SellerProductDetail = () => {
             setNewVariant({
                 images: Array(7).fill(null),
                 stock: "",
-                price: { amount: "", currency: "INR" },
+                price: { amount: "", currency: "INR", mrp: "" },
                 attributes: {}
             })
         } catch (error) {
@@ -89,6 +106,70 @@ const SellerProductDetail = () => {
             setIsSubmittingVariant(false)
         }
     }
+
+    const handleSaveStock = async (variantId) => {
+        setIsUpdatingStock(true);
+        try {
+            const data = await handleUpdateVariantStock(productId, variantId, editingStockValue);
+            if (data?.success) {
+                setProduct(prev => {
+                    const updated = { ...prev };
+                    const vIndex = updated.variants.findIndex(v => v._id === variantId);
+                    if (vIndex !== -1 && data.variant) {
+                        updated.variants[vIndex] = data.variant;
+                    }
+                    return updated;
+                });
+                setEditingStockId(null);
+            }
+        } catch (error) {
+            console.error("Failed to update stock", error);
+        } finally {
+            setIsUpdatingStock(false);
+        }
+    };
+
+    const handleSaveBasePrice = async () => {
+        setIsUpdatingBasePrice(true);
+        try {
+            const data = await handleUpdateProductBasePrice(productId, editingBasePriceValue, product.price?.currency, editingBasePriceMrp);
+            if (data?.success) {
+                setProduct(prev => ({
+                    ...prev,
+                    price: data.product.price
+                }));
+                setIsEditingBasePrice(false);
+            }
+        } catch (error) {
+            console.error("Failed to update base price", error);
+            alert(error?.response?.data?.message || "Failed to update base price");
+        } finally {
+            setIsUpdatingBasePrice(false);
+        }
+    };
+
+    const handleSaveVariantPrice = async (variantId) => {
+        setIsUpdatingVariantPrice(true);
+        try {
+            const data = await handleUpdateVariantPrice(productId, variantId, editingPriceVariantValue, product.price?.currency, editingPriceVariantMrp);
+            if (data?.success) {
+                setProduct(prev => {
+                    const updated = { ...prev };
+                    const vIndex = updated.variants.findIndex(v => v._id === variantId);
+                    if (vIndex !== -1 && data.variant) {
+                        updated.variants[vIndex] = data.variant;
+                    }
+                    return updated;
+                });
+                setEditingPriceVariantId(null);
+            }
+        } catch (error) {
+            console.error("Failed to update variant price", error);
+            alert(error?.response?.data?.message || "Failed to update variant price");
+        } finally {
+            setIsUpdatingVariantPrice(false);
+        }
+    };
 
     async function fetchProductDetails() {
         setIsLoading(true)
@@ -248,9 +329,73 @@ const SellerProductDetail = () => {
                             {product.title}
                         </h1>
 
-                        <div className="text-2xl font-semibold mb-6 flex items-center gap-2">
-                            <span>{product.price?.currency}</span>
-                            <span>{product.price?.amount?.toLocaleString()}</span>
+                        <div className="mb-6">
+                            <div className="flex items-center gap-2">
+                                <span>{product.price?.currency}</span>
+                                {isEditingBasePrice ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex flex-col gap-1">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                placeholder="Selling Price"
+                                                className="w-32 h-10 bg-background border border-surface-container-high rounded px-2 outline-none text-lg"
+                                                value={editingBasePriceValue}
+                                                onChange={(e) => setEditingBasePriceValue(e.target.value)}
+                                            />
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                placeholder="MRP (Optional)"
+                                                className="w-32 h-10 bg-background border border-surface-container-high rounded px-2 outline-none text-sm"
+                                                value={editingBasePriceMrp}
+                                                onChange={(e) => setEditingBasePriceMrp(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                onClick={handleSaveBasePrice}
+                                                disabled={isUpdatingBasePrice}
+                                                className="px-3 py-1 bg-primary text-on-primary rounded text-sm font-bold hover:opacity-90 disabled:opacity-50"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={() => setIsEditingBasePrice(false)}
+                                                disabled={isUpdatingBasePrice}
+                                                className="px-3 py-1 bg-surface-container-high text-on-surface rounded text-sm font-bold hover:bg-surface-container-highest"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-semibold">{product.price?.amount?.toLocaleString()}</span>
+                                            {product.price?.mrp > product.price?.amount && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-outline line-through">{product.price.mrp.toLocaleString()}</span>
+                                                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                                        SAVE {Math.round(((product.price.mrp - product.price.amount) / product.price.mrp) * 100)}%
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditingBasePrice(true);
+                                                setEditingBasePriceValue(product.price?.amount);
+                                                setEditingBasePriceMrp(product.price?.mrp || "");
+                                            }}
+                                            className="text-primary hover:text-primary/80 transition-colors flex items-center"
+                                            title="Edit Base Price"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">edit</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="h-px bg-surface-container-high w-full mb-6" />
@@ -314,10 +459,113 @@ const SellerProductDetail = () => {
                                                 <div className="text-sm font-semibold text-on-surface truncate">
                                                     {Object.entries(variant.attributes || {}).map(([k, v]) => `${k}: ${v}`).join(', ') || 'Default Variant'}
                                                 </div>
-                                                <div className="text-xs text-on-surface-variant flex gap-2">
-                                                    <span>{variant.price?.currency || product.price?.currency} {variant.price?.amount || product.price?.amount}</span>
+                                                <div className="text-xs text-on-surface-variant flex items-center gap-2 mt-1">
+                                                    <span>{variant.price?.currency || product.price?.currency}</span>
+                                                    {editingPriceVariantId === variant._id ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="flex flex-col gap-1">
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    placeholder="Price"
+                                                                    className="w-20 h-6 bg-background border border-surface-container-high rounded px-1 outline-none text-xs"
+                                                                    value={editingPriceVariantValue}
+                                                                    onChange={(e) => setEditingPriceVariantValue(e.target.value)}
+                                                                />
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    placeholder="MRP"
+                                                                    className="w-20 h-6 bg-background border border-surface-container-high rounded px-1 outline-none text-xs"
+                                                                    value={editingPriceVariantMrp}
+                                                                    onChange={(e) => setEditingPriceVariantMrp(e.target.value)}
+                                                                />
+                                                            </div>
+                                                            <div className="flex flex-col gap-1">
+                                                                <button
+                                                                    onClick={() => handleSaveVariantPrice(variant._id)}
+                                                                    disabled={isUpdatingVariantPrice}
+                                                                    className="px-2 py-0.5 bg-primary text-on-primary rounded text-[10px] font-bold hover:opacity-90 disabled:opacity-50"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingPriceVariantId(null)}
+                                                                    disabled={isUpdatingVariantPrice}
+                                                                    className="px-2 py-0.5 bg-surface-container-high text-on-surface rounded text-[10px] font-bold hover:bg-surface-container-highest"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="font-semibold">{variant.price?.amount || product.price?.amount}</span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingPriceVariantId(variant._id);
+                                                                        setEditingPriceVariantValue(variant.price?.amount || product.price?.amount);
+                                                                        setEditingPriceVariantMrp(variant.price?.mrp || product.price?.mrp || "");
+                                                                    }}
+                                                                    className="text-primary hover:text-primary/80 transition-colors flex items-center ml-1"
+                                                                    title="Edit Variant Price"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[14px]">edit</span>
+                                                                </button>
+                                                            </div>
+                                                            {(variant.price?.mrp || product.price?.mrp) > (variant.price?.amount || product.price?.amount) && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-[10px] text-outline line-through">{variant.price?.mrp || product.price?.mrp}</span>
+                                                                    <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1 rounded">
+                                                                        -{Math.round((((variant.price?.mrp || product.price?.mrp) - (variant.price?.amount || product.price?.amount)) / (variant.price?.mrp || product.price?.mrp)) * 100)}%
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     <span>•</span>
-                                                    <span className={variant.stock > 0 ? "text-emerald-400" : "text-error"}>{variant.stock > 0 ? `${variant.stock} in stock` : "Out of stock"}</span>
+                                                    {editingStockId === variant._id ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                className="w-16 h-6 bg-background border border-surface-container-high rounded px-1 outline-none text-xs"
+                                                                value={editingStockValue}
+                                                                onChange={(e) => setEditingStockValue(e.target.value)}
+                                                            />
+                                                            <button
+                                                                onClick={() => handleSaveStock(variant._id)}
+                                                                disabled={isUpdatingStock}
+                                                                className="px-2 py-0.5 bg-primary text-on-primary rounded text-[10px] font-bold hover:opacity-90 disabled:opacity-50"
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingStockId(null)}
+                                                                disabled={isUpdatingStock}
+                                                                className="px-2 py-0.5 bg-surface-container-high text-on-surface rounded text-[10px] font-bold hover:bg-surface-container-highest"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={variant.stock > 0 ? "text-emerald-400" : "text-error"}>
+                                                                {variant.stock > 0 ? `${variant.stock} in stock` : "Out of stock"}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingStockId(variant._id);
+                                                                    setEditingStockValue(variant.stock);
+                                                                }}
+                                                                className="text-primary hover:text-primary/80 transition-colors flex items-center"
+                                                                title="Edit Stock"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[14px]">edit</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -383,6 +631,10 @@ const SellerProductDetail = () => {
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider text-secondary mb-2">Price Amount</label>
                                     <input type="number" min="0" value={newVariant.price.amount} onChange={e => setNewVariant(p => ({...p, price: {...p.price, amount: e.target.value}}))} className="w-full h-10 bg-background border border-surface-container-high rounded-lg px-3 text-sm text-on-surface outline-none focus:border-primary" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider text-secondary mb-2">MRP (Optional)</label>
+                                    <input type="number" min="0" value={newVariant.price.mrp} onChange={e => setNewVariant(p => ({...p, price: {...p.price, mrp: e.target.value}}))} className="w-full h-10 bg-background border border-surface-container-high rounded-lg px-3 text-sm text-on-surface outline-none focus:border-primary" />
                                 </div>
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider text-secondary mb-2">Currency</label>

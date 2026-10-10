@@ -296,11 +296,28 @@ const ProductDetail = () => {
                             {product.title}
                         </h1>
 
-                        <div className="mb-8 flex items-center gap-2 text-xl font-semibold text-on-surface">
-                            <span>
-                                {{ "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}
-                            </span>
-                            <span>{displayPrice?.amount?.toLocaleString()}</span>
+                        <div className="mb-8 flex flex-col">
+                            <div className="flex items-center gap-2 text-xl font-semibold text-on-surface">
+                                <span>
+                                    {{ "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}
+                                </span>
+                                <span>{displayPrice?.amount?.toLocaleString()}</span>
+                            </div>
+                            
+                            {displayPrice?.mrp > displayPrice?.amount && (
+                                <div className="flex items-center gap-3 mt-1">
+                                    <div className="flex items-center gap-1 text-outline line-through text-sm">
+                                        <span>{{ "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}</span>
+                                        <span>{displayPrice.mrp.toLocaleString()}</span>
+                                    </div>
+                                    <div className="bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded text-xs tracking-wider">
+                                        SAVE {Math.round(((displayPrice.mrp - displayPrice.amount) / displayPrice.mrp) * 100)}%
+                                    </div>
+                                    <div className="text-emerald-500 text-xs font-semibold">
+                                        (Save { { "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}{(displayPrice.mrp - displayPrice.amount).toLocaleString()})
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="h-px w-full mb-8 bg-surface-container-high" />

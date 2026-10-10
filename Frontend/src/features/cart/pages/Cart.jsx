@@ -56,7 +56,8 @@ function resolvePrice(item, variantObj) {
         {};
     const amount = Number(priceObj?.amount ?? 0);
     const currency = priceObj?.currency ?? "INR";
-    return { amount, currency };
+    const mrp = priceObj?.mrp ? Number(priceObj.mrp) : null;
+    return { amount, currency, mrp };
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -78,7 +79,7 @@ const CartItemCard = ({ item, index, onQuantityChange, onRemove }) => {
     const title = product?.title ?? "Product";
 
     /* ── Price ── */
-    const { amount: price, currency } = resolvePrice(item, variantObj);
+    const { amount: price, currency, mrp } = resolvePrice(item, variantObj);
     const symbol = CURRENCY_SYMBOLS[currency] ?? "₹";
 
     /* ── Quantity & stock ── */
@@ -190,9 +191,21 @@ const CartItemCard = ({ item, index, onQuantityChange, onRemove }) => {
                 )}
 
                 {/* Unit price × qty */}
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-                    {symbol}{price.toLocaleString("en-IN")} × {qty}
-                </span>
+                <div className="flex flex-col gap-0.5 mt-1">
+                    <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                        {symbol}{price.toLocaleString("en-IN")} × {qty}
+                    </span>
+                    {mrp > price && (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] line-through" style={{ color: "rgba(255,255,255,0.3)" }}>
+                                {symbol}{mrp.toLocaleString("en-IN")}
+                            </span>
+                            <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1 rounded">
+                                SAVE {Math.round(((mrp - price) / mrp) * 100)}%
+                            </span>
+                        </div>
+                    )}
+                </div>
 
                 {/* Subtotal */}
                 <span className="text-base font-bold text-white">
@@ -341,11 +354,19 @@ const CartSkeleton = () => (
    ORDER SUMMARY PANEL
 ───────────────────────────────────────────────────────────────────────────── */
 const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
+    let totalMrp = 0;
     const subtotal = cartItems.reduce((acc, item) => {
         const variantObj = resolveVariant(item);
-        const { amount } = resolvePrice(item, variantObj);
-        return acc + amount * (item.quantity ?? 1);
+        const { amount, mrp } = resolvePrice(item, variantObj);
+        const qty = item.quantity ?? 1;
+        if (mrp && mrp > amount) {
+            totalMrp += mrp * qty;
+        } else {
+            totalMrp += amount * qty;
+        }
+        return acc + amount * qty;
     }, 0);
+    const discount = totalMrp - subtotal;
 
     const deliveryFee = 0;
     const total = subtotal + deliveryFee;
@@ -403,9 +424,21 @@ const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
                     Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
                 </span>
                 <span className="text-sm font-medium text-white">
-                    {symbol}{subtotal.toLocaleString("en-IN")}
+                    {symbol}{totalMrp.toLocaleString("en-IN")}
                 </span>
             </div>
+
+            {/* Discount row */}
+            {discount > 0 && (
+                <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+                        Discount
+                    </span>
+                    <span className="text-sm font-semibold" style={{ color: "#4ade80" }}>
+                        -{symbol}{discount.toLocaleString("en-IN")}
+                    </span>
+                </div>
+            )}
 
             {/* Delivery row */}
             <div className="flex items-center justify-between">
