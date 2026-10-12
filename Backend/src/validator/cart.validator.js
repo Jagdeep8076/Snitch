@@ -28,3 +28,23 @@ export const ValidateAddToCart = [
 
     ValidateRequest
 ];
+
+export const ValidateUpdateCartItem = [
+    param("itemId")
+        .isMongoId()
+        .withMessage("Invalid item ID"),
+
+    body("quantity")
+        .isInt({ min: 1 })
+        .withMessage("Quantity must be a positive integer"),
+
+    ValidateRequest
+];
+
+export const ValidateRemoveCartItem = [
+    param("itemId")
+        .isMongoId()
+        .withMessage("Invalid item ID"),
+
+    ValidateRequest
+];

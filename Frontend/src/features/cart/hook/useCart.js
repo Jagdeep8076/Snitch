@@ -8,10 +8,8 @@ import {
 import { useDispatch } from "react-redux";
 import {
     setCart,
-    setItems,
     setCartLoading,
     setCartError,
-    removeItem,
     clearItems,
 } from "../state/cart.Slice.js";
 
@@ -24,13 +22,17 @@ export const useCart = () => {
     async function handleGetCart() {
         try {
             dispatch(setCartLoading(true));
+            dispatch(setCartError(null));
             const data = await getCart();
-            dispatch(setCart(data.cart));
+            if (data?.cart) {
+                dispatch(setCart(data.cart));
+            }
             return data;
         } catch (error) {
             console.error("GET CART ERROR:", error);
-            dispatch(setCartError(error.response?.data?.message || "Failed to fetch cart"));
-            return null;
+            const msg = error.response?.data?.message || error.message || "Failed to fetch cart";
+            dispatch(setCartError(msg));
+            throw error;
         } finally {
             dispatch(setCartLoading(false));
         }
@@ -42,7 +44,7 @@ export const useCart = () => {
      */
     async function handleAddItem({ productId, variantId, quantity = 1 }) {
         const data = await addItem({ productId, variantId, quantity });
-        if (data.success && data.cart) {
+        if (data?.success && data?.cart) {
             dispatch(setCart(data.cart));
         }
         return data;

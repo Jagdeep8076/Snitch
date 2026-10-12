@@ -16,14 +16,18 @@ const CURRENCY_SYMBOLS = { INR: "₹", USD: "$", EUR: "€", GBP: "£", JPY: "¥
  * subdoc has _id as a plain string.
  */
 function resolveVariant(item) {
+    if (item?.selectedVariant) return item.selectedVariant;
     const product = item?.product;
     if (!product || !item.variant) return null;
-    const variantIdStr = String(item.variant);
-    return (
-        product.variants?.find(
-            (v) => String(v._id) === variantIdStr
-        ) ?? null
-    );
+    const variantIdStr = String(item.variant?._id || item.variant);
+    if (Array.isArray(product.variants)) {
+        return (
+            product.variants.find(
+                (v) => String(v._id) === variantIdStr
+            ) ?? null
+        );
+    }
+    return null;
 }
 
 /**
@@ -354,18 +358,19 @@ const CartSkeleton = () => (
    ORDER SUMMARY PANEL
 ───────────────────────────────────────────────────────────────────────────── */
 const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
-    let totalMrp = 0;
-    const subtotal = cartItems.reduce((acc, item) => {
-        const variantObj = resolveVariant(item);
-        const { amount, mrp } = resolvePrice(item, variantObj);
-        const qty = item.quantity ?? 1;
-        if (mrp && mrp > amount) {
-            totalMrp += mrp * qty;
-        } else {
-            totalMrp += amount * qty;
-        }
-        return acc + amount * qty;
-    }, 0);
+    const { subtotal, totalMrp } = cartItems.reduce(
+        (acc, item) => {
+            const variantObj = resolveVariant(item);
+            const { amount, mrp } = resolvePrice(item, variantObj);
+            const qty = item.quantity ?? 1;
+            const itemMrp = (mrp && mrp > amount) ? mrp * qty : amount * qty;
+            return {
+                subtotal: acc.subtotal + amount * qty,
+                totalMrp: acc.totalMrp + itemMrp,
+            };
+        },
+        { subtotal: 0, totalMrp: 0 }
+    );
     const discount = totalMrp - subtotal;
 
     const deliveryFee = 0;
@@ -527,7 +532,11 @@ const Cart = () => {
                 await handleGetCart();
             } catch (err) {
                 console.error("Cart fetch error:", err);
-                setErrorMsg("Failed to load cart. Please try again.");
+                const msg =
+                    err?.response?.data?.message ||
+                    err?.message ||
+                    "Failed to load cart. Please try again.";
+                setErrorMsg(msg);
             } finally {
                 setLoading(false);
             }

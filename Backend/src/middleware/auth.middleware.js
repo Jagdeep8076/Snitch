@@ -2,36 +2,43 @@ import jwt from "jsonwebtoken"
 import { config } from "../config/config.js"
 import userModel from "../models/user.model.js"
 
-export const   authenticateUser = async (req, res, next) =>{
-    const token = req.cookies.token
+export const authenticateUser = async (req, res, next) => {
+    const token =
+        req.cookies?.token ||
+        (req.headers.authorization?.startsWith("Bearer ")
+            ? req.headers.authorization.split(" ")[1]
+            : null);
 
-if(!token){
-    return res.status(401).json({ message: "Unauthorized"})
-}
-try{
-    const decoded = jwt.verify(token ,config.JWT_SECRET)
-
-    const user = await userModel.findById(decoded.id)
-
-    if (!user){
-        return res.status(401).json({ message: "unauthorized"})
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
     }
-    req.user = user
-    next()
-}catch (err){
-    console.log(err)
-    return res.status(401).json({ message: " Unauthorized"})
-}
+    try {
+        const decoded = jwt.verify(token, config.JWT_SECRET);
 
-}
+        const user = await userModel.findById(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        req.user = user;
+        next();
+    } catch (err) {
+        console.error("AUTH ERROR:", err);
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+};
 
 export const authenticateSeller = async (req, res, next) => {
-    const token = req.cookies.token
+    const token =
+        req.cookies?.token ||
+        (req.headers.authorization?.startsWith("Bearer ")
+            ? req.headers.authorization.split(" ")[1]
+            : null);
 
-    if(!token){
+    if (!token) {
         return res.status(401).json({
-            message: "Unauthorized"
-        })
+            message: "Unauthorized",
+        });
     }
     
     try{
