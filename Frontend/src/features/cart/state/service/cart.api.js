@@ -31,3 +31,18 @@ export const clearCart = async () => {
     const response = await cartApiInstance.delete("/clear")
     return response.data
 }
+
+export const createCartOrder = async (payload = {}) => {
+    const response = await cartApiInstance.post("/payment/create/order", payload);
+    return response.data;
+};
+
+export const verifyCartPayment = async (payload) => {
+    const response = await cartApiInstance.post("/payment/verify", payload);
+    return response.data;
+};
+
+export const reportPaymentFailure = async (payload) => {
+    const response = await cartApiInstance.post("/payment/failed", payload);
+    return response.data;
+};

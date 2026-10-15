@@ -11,6 +11,9 @@ import {
     updateCartItem,
     removeCartItem,
     clearCart,
+    createOrderController,
+    verifyPaymentController,
+    paymentFailedController,
 } from "../controllers/cart.controller.js";
 
 const router = express.Router();
@@ -44,5 +47,10 @@ router.delete(
 
 // DELETE /api/cart/clear — clear entire cart
 router.delete("/clear", authenticateUser, clearCart);
+
+// Payment flow routes
+router.post("/payment/create/order", authenticateUser, createOrderController);
+router.post("/payment/verify", authenticateUser, verifyPaymentController);
+router.post("/payment/failed", authenticateUser, paymentFailedController);
 
 export default router;

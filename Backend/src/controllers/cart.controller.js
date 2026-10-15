@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 import cartModel from "../models/cart.model.js";
 import productModel from "../models/product.model.js";
+import orderModel from "../models/order.model.js";
 import { stockOfVariant } from "../dao/product.dao.js";
+import { createOrder, verifyPaymentSignature } from "../services/payment.service.js";
+import { config } from "../config/config.js";
 
 /**
  * Helper to fetch and format the user's cart using an aggregation pipeline.
@@ -535,6 +538,314 @@ export const clearCart = async (req, res) => {
         return res.status(500).json({
             message: error.message,
             success: false,
+        });
+    }
+};
+
+
+/**
+ * Creates a Razorpay order from the user's cart.
+ * - Validates cart existence and items.
+ * - Re-verifies all products and variants against DB.
+ * - Validates stock for each item.
+ * - Computes total amount server-side from trusted database prices.
+ * - Creates a Razorpay order via payment service.
+ * - Creates a pending Order in MongoDB.
+ */
+export const createOrderController = async (req, res) => {
+    try {
+        if (!req.user?._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        const userId = req.user._id;
+        const { shippingAddress } = req.body || {};
+
+        // 1. Fetch current cart
+        const cart = await cartModel.findOne({ user: userId });
+        if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Your cart is empty. Please add items to checkout.",
+            });
+        }
+
+        // 2. Validate all items against DB products and check stock
+        let totalAmount = 0;
+        const orderItems = [];
+
+        for (const item of cart.items) {
+            const product = await productModel.findById(item.product);
+            if (!product) {
+                return res.status(400).json({
+                    success: false,
+                    message: "One of the products in your cart is no longer available.",
+                });
+            }
+
+            const variantIdStr = String(item.variant?._id || item.variant || "");
+            const variant = Array.isArray(product.variants)
+                ? product.variants.find((v) => String(v._id) === variantIdStr)
+                : null;
+
+            if (!variant) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Selected variant for "${product.title}" is no longer available.`,
+                });
+            }
+
+            const requestedQty = Math.max(1, Number(item.quantity) || 1);
+            const currentStock = Number(variant.stock ?? 0);
+            if (currentStock < requestedQty) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Only ${currentStock} item(s) available in stock for "${product.title}". Please reduce quantity.`,
+                });
+            }
+
+            // Calculate price from trusted server-side sources
+            const effectivePrice = (variant.price && variant.price.amount != null)
+                ? variant.price
+                : (product.price || { amount: 0, currency: "INR" });
+
+            const unitAmount = Number(effectivePrice.amount) || 0;
+            if (unitAmount <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid price configured for "${product.title}".`,
+                });
+            }
+
+            const itemSubtotal = unitAmount * requestedQty;
+            totalAmount += itemSubtotal;
+
+            orderItems.push({
+                product: product._id,
+                variant: variant._id,
+                selectedVariant: {
+                    _id: variant._id,
+                    attributes: variant.attributes,
+                    stock: variant.stock,
+                    price: effectivePrice,
+                },
+                title: product.title,
+                quantity: requestedQty,
+                price: {
+                    amount: unitAmount,
+                    currency: effectivePrice.currency || "INR",
+                    mrp: effectivePrice.mrp ?? null,
+                },
+                subtotal: itemSubtotal,
+            });
+        }
+
+        if (totalAmount <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Cart total must be greater than zero.",
+            });
+        }
+
+        // 3. Create Razorpay order via payment service
+        const razorpayOrder = await createOrder({
+            amount: totalAmount,
+            currency: "INR",
+            receipt: `rcpt_${Date.now()}`,
+            notes: {
+                userId: String(userId),
+                userEmail: req.user.email || "",
+            },
+        });
+
+        // 4. Save pending order in MongoDB
+        const resolvedAddress = {
+            fullname: shippingAddress?.fullname?.trim() || req.user.fullname || "Customer",
+            contact: shippingAddress?.contact?.trim() || req.user.contact || "",
+            address: shippingAddress?.address?.trim() || req.user.address || "",
+            city: shippingAddress?.city?.trim() || req.user.city || "",
+            state: shippingAddress?.state?.trim() || req.user.state || "",
+            pincode: shippingAddress?.pincode?.trim() || req.user.pincode || "",
+        };
+
+        const newOrder = await orderModel.create({
+            user: userId,
+            items: orderItems,
+            totalAmount,
+            currency: "INR",
+            shippingAddress: resolvedAddress,
+            paymentStatus: "pending",
+            orderStatus: "created",
+            razorpayOrderId: razorpayOrder.id,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Order created successfully",
+            order: razorpayOrder,
+            dbOrderId: newOrder._id,
+            keyId: config.RAZORPAY_KEY_ID,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency,
+        });
+    } catch (error) {
+        console.error("CREATE ORDER CONTROLLER ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to create order",
+        });
+    }
+};
+
+/**
+ * Verifies Razorpay payment signature and completes order processing.
+ * - Verifies timing-safe HMAC SHA256 signature using RAZORPAY_KEY_SECRET.
+ * - Prevents duplicate order deductions.
+ * - Deducts variant stock in database.
+ * - Clears user's cart in database.
+ */
+export const verifyPaymentController = async (req, res) => {
+    try {
+        if (!req.user?._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        const userId = req.user._id;
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            dbOrderId,
+        } = req.body || {};
+
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required Razorpay payment verification fields",
+            });
+        }
+
+        // 1. Locate order by user and Razorpay Order ID
+        const orderQuery = {
+            user: userId,
+            razorpayOrderId: razorpay_order_id,
+        };
+        if (dbOrderId && mongoose.Types.ObjectId.isValid(dbOrderId)) {
+            orderQuery._id = dbOrderId;
+        }
+
+        const order = await orderModel.findOne(orderQuery);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found or does not belong to the authenticated user",
+            });
+        }
+
+        // 2. Prevent duplicate processing
+        if (order.paymentStatus === "paid") {
+            return res.status(200).json({
+                success: true,
+                message: "Order already verified and paid",
+                order,
+            });
+        }
+
+        // 3. Verify Razorpay cryptographic signature server-side
+        const isValid = verifyPaymentSignature({
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+        });
+
+        if (!isValid) {
+            order.paymentStatus = "failed";
+            await order.save();
+            return res.status(400).json({
+                success: false,
+                message: "Payment signature verification failed. Untrusted payment.",
+            });
+        }
+
+        // 4. Mark order as paid
+        order.paymentStatus = "paid";
+        order.orderStatus = "processing";
+        order.razorpayPaymentId = razorpay_payment_id;
+        order.razorpaySignature = razorpay_signature;
+        await order.save();
+
+        // 5. Decrement inventory stock safely for each variant purchased
+        for (const item of order.items) {
+            if (item.product && item.variant) {
+                await productModel.updateOne(
+                    { _id: item.product, "variants._id": item.variant },
+                    { $inc: { "variants.$.stock": -item.quantity } }
+                );
+            }
+        }
+
+        // 6. Clear user cart in DB only AFTER successful payment verification
+        await cartModel.updateOne({ user: userId }, { $set: { items: [] } });
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment verified successfully",
+            order,
+        });
+    } catch (error) {
+        console.error("VERIFY PAYMENT CONTROLLER ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to verify payment",
+        });
+    }
+};
+
+/**
+ * Records a cancelled or failed payment attempt so the order state is preserved
+ * without discarding cart items.
+ */
+export const paymentFailedController = async (req, res) => {
+    try {
+        if (!req.user?._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        const userId = req.user._id;
+        const { razorpay_order_id, dbOrderId } = req.body || {};
+
+        const orderQuery = {
+            user: userId,
+            ...(razorpay_order_id ? { razorpayOrderId: razorpay_order_id } : {}),
+        };
+        if (dbOrderId && mongoose.Types.ObjectId.isValid(dbOrderId)) {
+            orderQuery._id = dbOrderId;
+        }
+
+        const order = await orderModel.findOne(orderQuery);
+        if (order && order.paymentStatus !== "paid") {
+            order.paymentStatus = "failed";
+            await order.save();
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment failure recorded",
+        });
+    } catch (error) {
+        console.error("PAYMENT FAILED CONTROLLER ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to record payment failure",
         });
     }
 };

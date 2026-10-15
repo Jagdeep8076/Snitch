@@ -16,18 +16,27 @@ async function sendTokenResponse(user, res, message) {
     res.cookie("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    return res.status(200).json({
-        message,
-        success: true,
+    const userPayload = {
         id: user._id,
         email: user.email,
         contact: user.contact,
         fullname: user.fullname,
-        role: user.role
+        role: user.role,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        pincode: user.pincode,
+    };
+
+    return res.status(200).json({
+        message,
+        success: true,
+        user: userPayload,
+        ...userPayload,
     });
 }
 
@@ -186,7 +195,6 @@ export const googleCallback = async (req, res) => {
 };
 
 export const getMe = async (req, res) => {
-
     const user = req.user;
 
     res.status(200).json({
@@ -197,7 +205,11 @@ export const getMe = async (req, res) => {
             email: user.email,
             contact: user.contact,
             fullname: user.fullname,
-            role: user.role
+            role: user.role,
+            address: user.address,
+            city: user.city,
+            state: user.state,
+            pincode: user.pincode,
         }
     });
 };
@@ -207,7 +219,7 @@ export const logout = async (req, res) => {
         res.clearCookie("token", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         });
         
         return res.status(200).json({

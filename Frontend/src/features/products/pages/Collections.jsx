@@ -30,6 +30,9 @@ const ProductCard = ({ product }) => {
                         alt={product.title}
                         className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                         loading="lazy"
+                        onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                        }}
                     />
                 ) : (
                     <div

@@ -84,7 +84,7 @@ export const useAuth = () => {
 
             console.log("LOGIN SUCCESS:", data);
 
-            dispatch(setUser(data));
+            dispatch(setUser(data?.user || data));
 
             return data;
 

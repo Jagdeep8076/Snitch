@@ -4,6 +4,9 @@ import {
     updateCartItem as updateCartItemApi,
     removeCartItem as removeCartItemApi,
     clearCart as clearCartApi,
+    createCartOrder as createCartOrderApi,
+    verifyCartPayment as verifyCartPaymentApi,
+    reportPaymentFailure as reportPaymentFailureApi,
 } from "../state/service/cart.api.js";
 import { useDispatch } from "react-redux";
 import {
@@ -96,11 +99,35 @@ export const useCart = () => {
         }
     }
 
+    /**
+     * Initiates a Razorpay order from the user's cart.
+     */
+    async function handleCreateCartOrder(payload = {}) {
+        return await createCartOrderApi(payload);
+    }
+
+    /**
+     * Verifies the cryptographic payment signature on the backend.
+     */
+    async function handleVerifyPayment(payload) {
+        return await verifyCartPaymentApi(payload);
+    }
+
+    /**
+     * Reports a failed or cancelled payment to maintain audit status.
+     */
+    async function handlePaymentFailure(payload) {
+        return await reportPaymentFailureApi(payload);
+    }
+
     return {
         handleGetCart,
         handleAddItem,
         handleUpdateQuantity,
         handleRemoveItem,
         handleClearCart,
+        handleCreateCartOrder,
+        handleVerifyPayment,
+        handlePaymentFailure,
     };
 };

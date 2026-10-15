@@ -50,8 +50,10 @@ const Nav = () => {
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // Compute total cart quantity from Redux
-  const cartTotalQty = cartItems.reduce((acc, item) => acc + (item.quantity ?? 1), 0);
+  // Compute total cart quantity safely from Redux
+  const cartTotalQty = Array.isArray(cartItems)
+    ? cartItems.reduce((acc, item) => acc + Math.max(0, Number(item?.quantity ?? 1) || 0), 0)
+    : 0;
 
   useEffect(() => {
     const handleOutsideClick = (event) => {

@@ -4,9 +4,8 @@ import { useCart } from "../hook/useCart.js";
 import { Link, useNavigate } from "react-router-dom";
 import gsap from "gsap";
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────────────────────────────────────── */
+
+
 const CURRENCY_SYMBOLS = { INR: "₹", USD: "$", EUR: "€", GBP: "£", JPY: "¥" };
 
 /**
@@ -16,18 +15,21 @@ const CURRENCY_SYMBOLS = { INR: "₹", USD: "$", EUR: "€", GBP: "£", JPY: "¥
  * subdoc has _id as a plain string.
  */
 function resolveVariant(item) {
-    if (item?.selectedVariant) return item.selectedVariant;
-    const product = item?.product;
-    if (!product || !item.variant) return null;
-    const variantIdStr = String(item.variant?._id || item.variant);
-    if (Array.isArray(product.variants)) {
-        return (
-            product.variants.find(
-                (v) => String(v._id) === variantIdStr
-            ) ?? null
-        );
+    if (item?.selectedVariant && typeof item.selectedVariant === "object") {
+        return item.selectedVariant;
     }
-    return null;
+
+    const product = item?.product;
+    const variantId = item?.variant?._id ?? item?.variant;
+    if (!product || variantId == null || !Array.isArray(product.variants)) {
+        return null;
+    }
+
+    const variantIdStr = String(variantId);
+    return (
+        product.variants.find((variant) => String(variant?._id) === variantIdStr) ??
+        null
+    );
 }
 
 /**
@@ -53,14 +55,15 @@ function getVariantAttrsDisplay(variant) {
  * Priority: item.price (stored at add-to-cart time) → variant.price → product.price
  */
 function resolvePrice(item, variantObj) {
-    const priceObj =
-        item.price ??
-        variantObj?.price ??
-        item.product?.price ??
-        {};
-    const amount = Number(priceObj?.amount ?? 0);
-    const currency = priceObj?.currency ?? "INR";
-    const mrp = priceObj?.mrp ? Number(priceObj.mrp) : null;
+    // Prefer the price snapshot stored on the cart item; fall back to the
+    // current variant/product price if older cart data has no price snapshot.
+    const priceObj = item?.price ?? variantObj?.price ?? item?.product?.price ?? {};
+    const rawAmount = Number(priceObj?.amount ?? priceObj?.price ?? 0);
+    const amount = Number.isFinite(rawAmount) && rawAmount >= 0 ? rawAmount : 0;
+    const currency = priceObj?.currency || variantObj?.price?.currency || item?.product?.price?.currency || "INR";
+    const rawMrp = priceObj?.mrp ?? variantObj?.price?.mrp ?? item?.product?.price?.mrp;
+    const parsedMrp = rawMrp == null ? null : Number(rawMrp);
+    const mrp = Number.isFinite(parsedMrp) && parsedMrp >= amount ? parsedMrp : null;
     return { amount, currency, mrp };
 }
 
@@ -87,8 +90,9 @@ const CartItemCard = ({ item, index, onQuantityChange, onRemove }) => {
     const symbol = CURRENCY_SYMBOLS[currency] ?? "₹";
 
     /* ── Quantity & stock ── */
-    const qty = item.quantity ?? 1;
-    const stock = variantObj?.stock ?? Infinity;
+    const qty = Math.max(1, Number(item?.quantity ?? 1) || 1);
+    const parsedStock = Number(variantObj?.stock);
+    const stock = variantObj?.stock == null || !Number.isFinite(parsedStock) ? Infinity : Math.max(0, parsedStock);
     const subtotal = price * qty;
 
     /* ── Variant display ── */
@@ -153,6 +157,9 @@ const CartItemCard = ({ item, index, onQuantityChange, onRemove }) => {
                         alt={title}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                        }}
                     />
                 ) : (
                     <div
@@ -362,7 +369,7 @@ const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
         (acc, item) => {
             const variantObj = resolveVariant(item);
             const { amount, mrp } = resolvePrice(item, variantObj);
-            const qty = item.quantity ?? 1;
+            const qty = Math.max(1, Number(item?.quantity ?? 1) || 1);
             const itemMrp = (mrp && mrp > amount) ? mrp * qty : amount * qty;
             return {
                 subtotal: acc.subtotal + amount * qty,
@@ -400,7 +407,7 @@ const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
                 {cartItems.map((item) => {
                     const variantObj = resolveVariant(item);
                     const { amount } = resolvePrice(item, variantObj);
-                    const qty = item.quantity ?? 1;
+                    const qty = Math.max(1, Number(item?.quantity ?? 1) || 1);
                     const title = item.product?.title ?? "Product";
                     const itemSubtotal = amount * qty;
                     return (
@@ -423,15 +430,26 @@ const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
             {/* Divider */}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
 
-            {/* Subtotal row */}
+            {/* Subtotal row: actual selling price before delivery */}
             <div className="flex items-center justify-between">
                 <span className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
                     Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
                 </span>
                 <span className="text-sm font-medium text-white">
-                    {symbol}{totalMrp.toLocaleString("en-IN")}
+                    {symbol}{subtotal.toLocaleString("en-IN")}
                 </span>
             </div>
+
+            {totalMrp > subtotal && (
+                <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+                        MRP
+                    </span>
+                    <span className="text-sm font-medium line-through" style={{ color: "rgba(255,255,255,0.4)" }}>
+                        {symbol}{totalMrp.toLocaleString("en-IN")}
+                    </span>
+                </div>
+            )}
 
             {/* Discount row */}
             {discount > 0 && (
@@ -489,6 +507,22 @@ const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
                 </span>
             </button>
 
+            {/* Secondary Continue Shopping button in order summary */}
+            <Link
+                to="/collections"
+                id="cart-continue-shopping-summary-btn"
+                className="w-full h-11 rounded-full flex items-center justify-center gap-2 font-semibold text-xs uppercase tracking-wider transition-all hover:bg-white/10 active:scale-[0.99]"
+                style={{
+                    color: "rgba(255,255,255,0.75)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                }}
+            >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                    arrow_back
+                </span>
+                Continue Shopping
+            </Link>
+
             {/* Delivery info */}
             <div
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
@@ -512,7 +546,9 @@ const OrderSummary = ({ cartItems, itemCount, onCheckout, loading }) => {
    MAIN CART PAGE
 ───────────────────────────────────────────────────────────────────────────── */
 const Cart = () => {
-    const cartItems = useSelector((state) => state.cart.items);
+    const cartItems = useSelector((state) =>
+        Array.isArray(state.cart?.items) ? state.cart.items : []
+    );
     const { handleGetCart, handleUpdateQuantity, handleRemoveItem, handleClearCart } = useCart();
     const navigate = useNavigate();
 
@@ -638,7 +674,7 @@ const Cart = () => {
 
     /* ── Derived totals ── */
     const itemCount = cartItems?.length ?? 0;
-    const totalQty = cartItems.reduce((acc, item) => acc + (item.quantity ?? 1), 0);
+    const totalQty = cartItems.reduce((acc, item) => acc + Math.max(0, Number(item?.quantity ?? 1) || 0), 0);
 
     return (
         <div
@@ -646,60 +682,63 @@ const Cart = () => {
             style={{ background: "#111113" }}
         >
             {/* ═══════════════════════════════════════════════════════
-                TOP NAV BAR (back button + badge)
-            ═══════════════════════════════════════════════════════ */}
-            <header
-                ref={navRef}
-                className="fixed top-0 left-0 right-0 z-40"
-                style={{
-                    background: "rgba(17,17,19,0.85)",
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
-                }}
-            >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                    {/* Back + Title */}
-                    <div className="flex items-center gap-3">
-                        <button
-                            id="cart-back-btn"
-                            onClick={() => navigate(-1)}
-                            className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-white/[0.06]"
-                            style={{ color: "rgba(255,255,255,0.6)" }}
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
-                                arrow_back
-                            </span>
-                        </button>
-                        <h1 className="text-lg font-semibold text-white tracking-tight">
-                            My Cart
-                        </h1>
-                    </div>
-
-                    {/* Cart badge */}
-                    {totalQty > 0 && (
-                        <div className="relative">
-                            <span className="material-symbols-outlined text-white/60" style={{ fontSize: 22 }}>
-                                shopping_bag
-                            </span>
-                            <span
-                                className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-black"
-                                style={{ background: "#ffffff", padding: "0 3px" }}
-                            >
-                                {totalQty}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </header>
-
-            {/* ═══════════════════════════════════════════════════════
-                MAIN CONTENT — responsive two-column layout
+                MAIN CONTENT — responsive layout with top actions
             ═══════════════════════════════════════════════════════ */}
             <main
                 ref={contentRef}
-                className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pt-24 pb-36"
+                className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pt-28 pb-36"
             >
+                {/* ── Top Bar: Back & Continue Shopping + Page Title ── */}
+                <div
+                    ref={navRef}
+                    className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4"
+                    style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+                >
+                    <div className="flex items-center gap-3">
+                        <Link
+                            to="/collections"
+                            id="cart-continue-shopping-btn"
+                            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:text-sm font-semibold transition-all hover:bg-white/10 active:scale-[0.98]"
+                            style={{
+                                color: "#ffffff",
+                                border: "1px solid rgba(255,255,255,0.18)",
+                                background: "rgba(255,255,255,0.04)",
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                                arrow_back
+                            </span>
+                            <span>Continue Shopping</span>
+                        </Link>
+                        <button
+                            id="cart-back-btn"
+                            onClick={() => navigate(-1)}
+                            className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-white/[0.08]"
+                            style={{ color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.1)" }}
+                            aria-label="Go back"
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                                arrow_back
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                            My Cart
+                        </h1>
+                        {totalQty > 0 && (
+                            <span
+                                className="min-w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-bold text-black px-1.5"
+                                style={{ background: "#ffffff" }}
+                            >
+                                {totalQty}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
                 {/* Error banner */}
                 {errorMsg && (
                     <div
@@ -784,16 +823,17 @@ const Cart = () => {
             ═══════════════════════════════════════════════════════ */}
             {!loading && cartItems.length > 0 && (
                 <div
-                    className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-8 pt-4"
+                    className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-3 flex flex-col gap-2"
                     style={{
                         background:
-                            "linear-gradient(to top, rgba(17,17,19,1) 60%, rgba(17,17,19,0))",
+                            "linear-gradient(to top, rgba(17,17,19,1) 75%, rgba(17,17,19,0))",
+                        backdropFilter: "blur(12px)",
                     }}
                 >
                     <button
                         id="cart-checkout-btn"
                         onClick={() => navigate("/checkout")}
-                        className="w-full h-14 rounded-full flex items-center justify-center gap-2.5 font-bold text-sm uppercase tracking-wider transition-all hover:opacity-92 active:scale-[0.99]"
+                        className="w-full h-12 rounded-full flex items-center justify-center gap-2.5 font-bold text-sm uppercase tracking-wider transition-all hover:opacity-92 active:scale-[0.99]"
                         style={{
                             background: "#ffffff",
                             color: "#111113",
@@ -805,6 +845,13 @@ const Cart = () => {
                             arrow_forward
                         </span>
                     </button>
+                    <Link
+                        to="/collections"
+                        id="cart-continue-shopping-mobile-btn"
+                        className="text-center text-xs text-white/60 hover:text-white py-1 transition"
+                    >
+                        or Continue Shopping
+                    </Link>
                 </div>
             )}
         </div>

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import Home from "../features/products/pages/Home";
 import Register from "../features/auth/pages/Register";
@@ -9,23 +9,28 @@ import Protected from "../features/auth/components/Protected";
 import ProductDetail from "../features/products/pages/ProductDetail";
 import SellerProductDetail from "../features/products/pages/SellerProductDetail";
 import Cart from "../features/cart/pages/Cart";
+import Checkout from "../features/cart/pages/Checkout";
 import AppLayout from "./AppLayout";
 import Collections from "../features/products/pages/Collections";
 import NewArrivals from "../features/products/pages/NewArrivals";
 import About from "../features/products/pages/About";
+import RouteErrorBoundary from "../components/RouteErrorBoundary";
+import NotFound from "../components/NotFound";
 
 const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />,
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/login",
     element: <Login />,
+    errorElement: <RouteErrorBoundary />,
   },
-
   {
     element: <AppLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: "/",
@@ -55,12 +60,28 @@ const router = createBrowserRouter([
           </Protected>
         ),
       },
+      {
+        path: "/checkout",
+        element: (
+          <Protected>
+            <Checkout />
+          </Protected>
+        ),
+      },
+      {
+        path: "*",
+        element: <NotFound />,
+      },
     ],
   },
-
   {
     path: "/seller",
+    errorElement: <RouteErrorBoundary />,
     children: [
+      {
+        index: true,
+        element: <Navigate to="/seller/dashboard" replace />,
+      },
       {
         path: "/seller/products/create",
         element: (
