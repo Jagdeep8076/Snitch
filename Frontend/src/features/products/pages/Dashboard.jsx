@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useProduct } from "../hook/useProduct.js";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import Nav from "../../Shared/Components/nav.jsx";
+import Nav from "../../Shared/Components/Nav.jsx";
 import gsap from "gsap";
 
 /* ─────────────────────────────────────────────
