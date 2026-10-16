@@ -17,22 +17,35 @@ app.use(morgon("dev"))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://snitch-azure.vercel.app",
+    config.CLIENT_URL,
+    process.env.CLIENT_URL,
+    process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some((o) => origin.startsWith(o)) || origin.endsWith(".vercel.app")) {
+            return callback(null, true);
+        }
+        return callback(null, true);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
-}))
-
+}));
 
 app.use(passport.initialize());
 
 passport.use(new GoogleStrategy({
     clientID: config.GOOGLE_CLIENT_ID,
     clientSecret: config.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/api/auth/google/callback"
+    callbackURL: config.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback",
  },(accessToken, refreshToken, profile, done) =>{
     return done(null,profile);
- }))
+ }));
 
 app.get("/", (_req, res)=>{
     res.status(200).json({

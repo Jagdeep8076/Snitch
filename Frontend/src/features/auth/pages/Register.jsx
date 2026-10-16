@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { useAuth } from "../hook/useAuth";
 import ThreeBackground from "../../../components/ThreeBackground";
 import StudioPass3D from "../../../components/StudioPass3D";
+import { API_BASE_URL } from "../../../config/api.config.js";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -674,7 +675,7 @@ const Register = () => {
 
                   {/* Phase 5: Google OAuth Registration explicit semantics */}
                   <a
-                    href={`http://localhost:3000/api/auth/google?action=register${safeRedirect !== "/" ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}`}
+                    href={`${API_BASE_URL}/auth/google?action=register${safeRedirect !== "/" ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}`}
                     className="w-full h-12 bg-white text-black rounded-full text-sm font-semibold flex items-center justify-center gap-3 border border-white/10 hover:bg-gray-100 active:scale-[0.99] transition-all duration-150"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

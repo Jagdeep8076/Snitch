@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { useAuth } from "../hook/useAuth";
 import ThreeBackground from "../../../components/ThreeBackground";
 import StudioPass3D from "../../../components/StudioPass3D";
+import { API_BASE_URL } from "../../../config/api.config.js";
 
 const Login = () => {
     const { handleLogin, handleResendVerification } = useAuth();
@@ -444,7 +445,7 @@ const Login = () => {
 
                                     {/* PHASE 6: Explicit Google Login with destination preservation */}
                                     <a
-                                        href={`http://localhost:3000/api/auth/google?action=login&redirect=${encodeURIComponent(safeDestination)}`}
+                                        href={`${API_BASE_URL}/auth/google?action=login&redirect=${encodeURIComponent(safeDestination)}`}
                                         className="w-full h-12 bg-white text-black rounded-full text-sm font-semibold flex items-center justify-center gap-3 border border-white/10 hover:bg-gray-100 active:scale-[0.99] transition-all duration-150"
                                     >
                                         <svg

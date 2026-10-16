@@ -38,5 +38,7 @@ export const config = {
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     IMAGEKIT_PRIVATE_KEY:process.env.IMAGEKIT_PRIVATE_KEY,
     RAZORPAY_KEY_ID:process.env.RAZORPAY_KEY_ID,
-    RAZORPAY_KEY_SECRET:process.env.RAZORPAY_KEY_SECRET
-}
+    RAZORPAY_KEY_SECRET:process.env.RAZORPAY_KEY_SECRET,
+    CLIENT_URL: process.env.CLIENT_URL || process.env.FRONTEND_URL || (process.env.NODE_ENV === "production" ? "https://snitch-azure.vercel.app" : "http://localhost:5173"),
+    GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || (process.env.NODE_ENV === "production" ? "https://snitch-backend-19po.onrender.com/api/auth/google/callback" : "http://localhost:3000/api/auth/google/callback"),
+};

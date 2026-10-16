@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout as logoutApi } from "../../auth/service/auth.api.js";
 import { setUser } from "../../auth/state/auth.slice.js";
 import axios from "axios";
+import { API_BASE_URL } from "../../../config/api.config.js";
 
 const getUserFirstName = (user) => {
   if (!user) return "User";
@@ -128,7 +129,7 @@ const Nav = () => {
       setSearchLoading(true);
       setSearchError(null);
       try {
-        const response = await axios.get("/api/products", { withCredentials: true });
+        const response = await axios.get(`${API_BASE_URL}/products`, { withCredentials: true });
         const allProducts = response.data?.products || [];
         const q = searchQuery.toLowerCase();
         const filtered = allProducts.filter(

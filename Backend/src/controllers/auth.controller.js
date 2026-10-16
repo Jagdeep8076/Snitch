@@ -349,9 +349,11 @@ export const googleCallback = async (req, res) => {
         const fullname = req.user?.displayName || "Google User";
         const googleId = req.user?.id;
 
+        const clientBase = config.CLIENT_URL || "http://localhost:5173";
+
         if (!email) {
             return res.redirect(
-                `http://localhost:5173/${action === "register" ? "register" : "login"}?error=google_email_missing`
+                `${clientBase}/${action === "register" ? "register" : "login"}?error=google_email_missing`
             );
         }
 
@@ -385,12 +387,12 @@ export const googleCallback = async (req, res) => {
             res.cookie("token", token, getAuthCookieOptions());
 
             const separator = redirectTarget.includes("?") ? "&" : "?";
-            return res.redirect(`http://localhost:5173${redirectTarget}${separator}auth=google_success`);
+            return res.redirect(`${clientBase}${redirectTarget}${separator}auth=google_success`);
         } else {
             // PHASE 6: Explicit Google Login - DO NOT silently register unknown users!
             if (!user) {
                 const message = encodeURIComponent("No account found. Please register with Google first.");
-                return res.redirect(`http://localhost:5173/register?error=no_account&message=${message}`);
+                return res.redirect(`${clientBase}/register?error=no_account&message=${message}`);
             }
 
             // Existing account: authenticate and link googleId if missing
@@ -408,11 +410,11 @@ export const googleCallback = async (req, res) => {
 
             res.cookie("token", token, getAuthCookieOptions());
 
-            return res.redirect(`http://localhost:5173${redirectTarget}`);
+            return res.redirect(`${clientBase}${redirectTarget}`);
         }
     } catch (error) {
         console.error("GOOGLE AUTH ERROR:", error);
-        return res.redirect("http://localhost:5173/login?error=google_auth_failed");
+        return res.redirect(`${config.CLIENT_URL || "http://localhost:5173"}/login?error=google_auth_failed`);
     }
 };
 

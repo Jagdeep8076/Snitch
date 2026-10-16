@@ -1,9 +1,10 @@
-import axios from "axios"
+import axios from "axios";
+import { API_BASE_URL } from "../../../../config/api.config.js";
 
 const cartApiInstance = axios.create({
-    baseURL: "/api/cart",
-    withCredentials: true
-})
+    baseURL: `${API_BASE_URL}/cart`,
+    withCredentials: true,
+});
 
 export const addItem = async ({ productId, variantId, quantity = 1 }) => {
     const response = await cartApiInstance.post(`/add/${productId}/${variantId}`, {

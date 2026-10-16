@@ -16,6 +16,7 @@ import {
     logout,
 } from "../controllers/auth.controller.js";
 import { authenticateUser } from "../middleware/auth.middleware.js";
+import { config } from "../config/config.js";
 
 const router = Router();
 
@@ -42,14 +43,15 @@ router.get("/google", (req, res, next) => {
 });
 
 router.get("/google/callback", (req, res, next) => {
+    const clientBase = config.CLIENT_URL || "http://localhost:5173";
     // If the user cancelled Google authentication or an error occurred
     if (req.query.error) {
-        let returnUrl = "http://localhost:5173/login?cancelled=true";
+        let returnUrl = `${clientBase}/login?cancelled=true`;
         try {
             if (req.query.state) {
                 const parsed = JSON.parse(Buffer.from(req.query.state, "base64").toString("utf8"));
                 if (parsed.action === "register") {
-                    returnUrl = "http://localhost:5173/register?cancelled=true";
+                    returnUrl = `${clientBase}/register?cancelled=true`;
                 }
             }
         } catch (_) {}
@@ -58,7 +60,7 @@ router.get("/google/callback", (req, res, next) => {
 
     passport.authenticate("google", {
         session: false,
-        failureRedirect: "http://localhost:5173/login?error=google-auth-failed",
+        failureRedirect: `${clientBase}/login?error=google-auth-failed`,
     })(req, res, next);
 }, googleCallback);
 
