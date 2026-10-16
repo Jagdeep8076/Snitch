@@ -261,20 +261,20 @@ const ProductCard = ({ product, index }) => {
       </div>
 
       {/* Details */}
-      <div className="p-4 sm:p-5">
-        <h3 className="text-sm font-semibold text-on-surface truncate mb-1 group-hover:text-white transition-colors">
+      <div className="p-3 sm:p-5">
+        <h3 className="text-xs sm:text-sm font-semibold text-on-surface truncate mb-1 group-hover:text-white transition-colors">
           {product.title}
         </h3>
-        <p className="text-xs text-on-surface-variant line-clamp-1 mb-3 leading-relaxed">
+        <p className="text-xs text-on-surface-variant line-clamp-1 mb-2.5 sm:mb-3 leading-relaxed">
           {product.description || "Premium fashion piece"}
         </p>
-        <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-white">
+        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+          <span className="text-sm sm:text-base font-bold text-white">
             {symbol}
             {Number(price).toLocaleString("en-IN")}
           </span>
           <span
-            className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider text-on-surface-variant border border-white/[0.06]"
+            className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-on-surface-variant border border-white/[0.06]"
             style={{ background: "rgba(255,255,255,0.04)" }}
           >
             {currency}
@@ -639,7 +639,7 @@ const Home = () => {
             className="overflow-hidden mb-6"
             style={{ perspective: "800px" }}
           >
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95]">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] sm:leading-[0.95]">
               <span className="hero-word inline-block text-white">
                 Redefine
               </span>{" "}
@@ -773,11 +773,11 @@ const Home = () => {
             </div>
 
             {/* Filter pills (decorative) */}
-            <div className="flex items-center gap-2 mt-6 sm:mt-0">
+            <div className="flex items-center gap-2 mt-6 sm:mt-0 flex-wrap">
               {["All", "New", "Popular", "Under ₹999"].map((filter, i) => (
                 <button
                   key={filter}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold transition-all duration-200 ${
                     i === 0
                       ? "bg-white text-black"
                       : "border border-white/[0.08] text-white/50 hover:text-white hover:border-white/20"
@@ -818,7 +818,7 @@ const Home = () => {
 
           {/* Loading Skeletons */}
           {loading && (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
@@ -871,7 +871,7 @@ const Home = () => {
 
           {/* Product Grid */}
           {!loading && !error && productCount > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
               {products.map((product, index) => (
                 <ProductCard
                   key={product._id || product.id}
@@ -889,7 +889,7 @@ const Home = () => {
       ═══════════════════════════════════════════════════════ */}
       <section className="relative z-10 border-t border-white/[0.04]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {[
               {
                 icon: "local_shipping",

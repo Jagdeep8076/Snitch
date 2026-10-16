@@ -492,7 +492,7 @@ const Checkout = () => {
                     {/* LEFT: Shipping / Delivery Form */}
                     <form
                         onSubmit={handlePlaceOrder}
-                        className="rounded-3xl p-6 sm:p-8 space-y-6"
+                        className="rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6"
                         style={{
                             background: "rgba(24,24,28,0.65)",
                             border: "1px solid rgba(255,255,255,0.06)",
@@ -609,24 +609,24 @@ const Checkout = () => {
 
                         {/* Payment Method Banner */}
                         <div
-                            className="p-4 rounded-2xl flex items-center justify-between"
+                            className="p-3.5 sm:p-4 rounded-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-3"
                             style={{
                                 background: "rgba(255,255,255,0.03)",
                                 border: "1px solid rgba(255,255,255,0.08)",
                             }}
                         >
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                                     <span className="material-symbols-outlined text-white/70" style={{ fontSize: 20 }}>
                                         lock
                                     </span>
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-sm font-semibold text-white">Razorpay Secure Checkout</p>
-                                    <p className="text-xs text-white/40">Cards, UPI, NetBanking, Wallets · 256-bit Encrypted</p>
+                                    <p className="text-xs text-white/40 leading-snug">Cards, UPI, NetBanking, Wallets · 256-bit Encrypted</p>
                                 </div>
                             </div>
-                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                                 Verified
                             </span>
                         </div>
@@ -665,7 +665,7 @@ const Checkout = () => {
 
                     {/* RIGHT: Order Review & Pricing Summary */}
                     <div
-                        className="rounded-3xl p-6 sm:p-7 space-y-6"
+                        className="rounded-3xl p-4 sm:p-6 lg:p-7 space-y-5 sm:space-y-6"
                         style={{
                             background: "rgba(24,24,28,0.65)",
                             border: "1px solid rgba(255,255,255,0.06)",

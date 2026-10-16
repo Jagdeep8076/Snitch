@@ -61,12 +61,19 @@ const STYLES = `
   .sn-orb { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(110px); opacity: 0.12; }
 
   @media (max-width: 768px) {
-    .sn-grid-2 { grid-template-columns: 1fr !important; }
+    .sn-grid-2 { grid-template-columns: 1fr !important; gap: 40px !important; }
     .sn-grid-4 { grid-template-columns: 1fr 1fr !important; }
-    .sn-step { grid-template-columns: 40px 1fr !important; }
+    .sn-step { grid-template-columns: 36px 1fr !important; gap: 12px !important; }
     .sn-step .sn-step-badge { display: none; }
     .sn-step .sn-step-desc { grid-column: 2 !important; }
-    .sn-hero-text { font-size: clamp(44px, 12vw, 72px) !important; }
+    .sn-step-headers { display: none !important; }
+    .sn-hero-text { font-size: clamp(36px, 10vw, 64px) !important; }
+    .sn-stat-block { padding: 24px 16px !important; }
+    .sn-card { padding: 24px 18px !important; }
+  }
+  @media (max-width: 480px) {
+    .sn-grid-4 { grid-template-columns: 1fr !important; }
+    .sn-stat-block { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.05); }
   }
 `;
 
@@ -105,7 +112,7 @@ const FeatureCard = ({ icon, title, desc }) => (
 
 /* ── Stat block ──────────────────────────────────────── */
 const StatBlock = ({ num, label }) => (
-  <div style={{ padding: "36px 32px", borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+  <div className="sn-stat-block" style={{ padding: "36px 32px", borderRight: "1px solid rgba(255,255,255,0.05)" }}>
     <p className="sn-stat-num sn-grad">{num}</p>
     <p className="sn-stat-label">{label}</p>
   </div>
@@ -169,7 +176,7 @@ const About = () => {
           <StatBlock num="100%" label="Authenticity guaranteed on every item" />
           <StatBlock num="3–5d"  label="Standard delivery, always free" />
           <StatBlock num="Zero"  label="Restocks — if it's gone, it's gone" />
-          <div style={{ padding: "36px 32px" }}>
+          <div className="sn-stat-block" style={{ padding: "36px 32px" }}>
             <p className="sn-stat-num" style={{ color: "#fff" }}>∞</p>
             <p className="sn-stat-label">Independent sellers on the platform</p>
           </div>
@@ -224,7 +231,7 @@ const About = () => {
           </div>
 
           {/* Column headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 2.2fr 72px", gap: 20, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: 4 }}>
+          <div className="sn-step-headers" style={{ display: "grid", gridTemplateColumns: "52px 1fr 2.2fr 72px", gap: 20, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: 4 }}>
             {["Step", "Action", "Details", "Role"].map((h) => (
               <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em", textTransform: "uppercase" }}>{h}</span>
             ))}

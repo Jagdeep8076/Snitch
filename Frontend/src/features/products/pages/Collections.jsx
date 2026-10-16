@@ -58,20 +58,20 @@ const ProductCard = ({ product }) => {
             </div>
 
             {/* Details */}
-            <div className="p-4 sm:p-5">
-                <h3 className="text-sm font-semibold text-on-surface truncate mb-1 group-hover:text-white transition-colors">
+            <div className="p-3 sm:p-5">
+                <h3 className="text-xs sm:text-sm font-semibold text-on-surface truncate mb-1 group-hover:text-white transition-colors">
                     {product.title}
                 </h3>
-                <p className="text-xs text-on-surface-variant line-clamp-1 mb-3 leading-relaxed">
+                <p className="text-xs text-on-surface-variant line-clamp-1 mb-2.5 sm:mb-3 leading-relaxed">
                     {product.description || "Premium fashion piece"}
                 </p>
-                <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-white">
+                <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                    <span className="text-sm sm:text-base font-bold text-white">
                         {symbol}{Number(price).toLocaleString("en-IN")}
                     </span>
                     {product.variants?.length > 0 && (
                         <span
-                            className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider text-white/50 border border-white/[0.06]"
+                            className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-white/50 border border-white/[0.06]"
                             style={{ background: "rgba(255,255,255,0.04)" }}
                         >
                             {product.variants.length} variant{product.variants.length !== 1 ? "s" : ""}
@@ -128,14 +128,14 @@ const Collections = () => {
             style={{ background: "#111113" }}
         >
             {/* Header */}
-            <div className="pt-28 pb-12 px-4 sm:px-6 lg:px-8 text-center max-w-7xl mx-auto">
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/30 mb-4">
+            <div className="pt-24 sm:pt-28 pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 text-center max-w-7xl mx-auto">
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/30 mb-3 sm:mb-4">
                     Snitch Studio
                 </p>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight mb-6">
+                <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight mb-4 sm:mb-6">
                     Collections
                 </h1>
-                <p className="text-base text-white/45 max-w-xl mx-auto leading-relaxed">
+                <p className="text-sm sm:text-base text-white/45 max-w-xl mx-auto leading-relaxed">
                     Discover premium streetwear from independent sellers. Each piece is unique, each drop is limited.
                 </p>
             </div>
@@ -162,7 +162,7 @@ const Collections = () => {
                             </p>
                         )}
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
                             {loading
                                 ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
                                 : products.length === 0

@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react'
-import { useNavigate, useParams } from "react-router-dom";
-import { useProduct } from '../hook/useProduct.js'
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { useProduct } from '../hook/useProduct.js';
 import { useCart } from '../../cart/hook/useCart.js';
 
 const ADD_TO_CART_STATES = {
@@ -12,12 +13,15 @@ const ADD_TO_CART_STATES = {
 
 const ProductDetail = () => {
     const { productId } = useParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const user = useSelector((state) => state.auth?.user);
+
     const [product, setProduct] = useState(null);
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedAttributes, setSelectedAttributes] = useState({});
     const [addToCartState, setAddToCartState] = useState(ADD_TO_CART_STATES.IDLE);
     const [addToCartMsg, setAddToCartMsg] = useState("");
-    const navigate = useNavigate();
     const { handleGetProductById } = useProduct();
     const { handleAddItem } = useCart();
     const feedbackTimerRef = useRef(null);
@@ -103,16 +107,6 @@ const ProductDetail = () => {
         });
     };
 
-    if (!product) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <p className="text-[10px] uppercase tracking-[0.2em] font-medium animate-pulse text-outline font-[Plus_Jakarta_Sans]">
-                    Retrieving piece...
-                </p>
-            </div>
-        );
-    }
-
     const partialMatchVariant = (() => {
         if (!product?.variants || Object.keys(selectedAttributes).length === 0) return null;
         return product.variants.find(v => {
@@ -153,6 +147,19 @@ const ProductDetail = () => {
         if (!product?._id || !activeVariant?._id || isOutOfStock) return;
         if (addToCartState === ADD_TO_CART_STATES.LOADING) return;
 
+        // Phase 1: Guest click check — if unauthenticated, redirect to Login preserving destination
+        if (!user) {
+            navigate("/login", {
+                state: {
+                    from: location,
+                    action: "add_to_cart",
+                    productId: product._id,
+                    variantId: activeVariant._id,
+                },
+            });
+            return;
+        }
+
         try {
             setAddToCartState(ADD_TO_CART_STATES.LOADING);
             setAddToCartMsg("");
@@ -160,7 +167,7 @@ const ProductDetail = () => {
             const data = await handleAddItem({
                 productId: product._id,
                 variantId: activeVariant._id,
-                quantity: 1
+                quantity: 1,
             });
 
             if (data?.success) {
@@ -171,6 +178,18 @@ const ProductDetail = () => {
             }
         } catch (error) {
             console.error("Failed to add item to cart:", error);
+            if (error?.response?.status === 401) {
+                // Backend session expired or cookie invalid — redirect to login
+                navigate("/login", {
+                    state: {
+                        from: location,
+                        action: "add_to_cart",
+                        productId: product._id,
+                        variantId: activeVariant._id,
+                    },
+                });
+                return;
+            }
             const msg = error?.response?.data?.message || error?.message || "Failed to add to cart";
             setAddToCartState(ADD_TO_CART_STATES.ERROR);
             setAddToCartMsg(msg);
@@ -182,6 +201,21 @@ const ProductDetail = () => {
             }, 3000);
         }
     };
+
+    // When returning from login after guest clicked Add to Cart
+    const hasAutoAddedRef = useRef(false);
+    useEffect(() => {
+        if (
+            !hasAutoAddedRef.current &&
+            location.state?.action === "add_to_cart" &&
+            user &&
+            activeVariant &&
+            !isOutOfStock
+        ) {
+            hasAutoAddedRef.current = true;
+            handleAddToCart();
+        }
+    }, [user, activeVariant, isOutOfStock]);
 
     const getAddToCartText = () => {
         if (isOutOfStock) return "Out of Stock";
@@ -210,13 +244,23 @@ const ProductDetail = () => {
         return base + "bg-primary text-on-primary hover:opacity-90 active:scale-[0.99]";
     };
 
+    if (!product) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <p className="text-[10px] uppercase tracking-[0.2em] font-medium animate-pulse text-outline font-[Plus_Jakarta_Sans]">
+                    Retrieving piece...
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen pb-24 bg-background text-on-surface antialiased font-[Plus_Jakarta_Sans]">
-            <div className="max-w-7xl mx-auto px-8 lg:px-16 xl:px-24 pt-12 lg:pt-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 xl:px-24 pt-8 sm:pt-12 lg:pt-20">
 
-                <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-start">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-24 items-start">
 
-                    <div className="w-full lg:w-[70%] flex flex-col-reverse md:flex-row gap-4 lg:gap-6">
+                    <div className="w-full lg:w-[70%] flex flex-col-reverse md:flex-row gap-3 sm:gap-4 lg:gap-6">
 
                         {displayImages.length > 1 && (
                             <div className="flex flex-row md:flex-col gap-4 overflow-x-auto md:overflow-y-auto pb-2 md:pb-0 w-full md:w-20 lg:w-24 flex-shrink-0 md:max-h-[calc(100vh-200px)]">
@@ -260,7 +304,8 @@ const ProductDetail = () => {
                                                     : prev - 1
                                             )
                                         }
-                                        className="absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full bg-surface-container-low/80 backdrop-blur-sm text-on-surface border border-surface-container-high hover:bg-surface-container"
+                                        className="absolute left-3 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center opacity-85 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 rounded-full bg-surface-container-low/80 backdrop-blur-sm text-on-surface border border-surface-container-high hover:bg-surface-container"
+                                        aria-label="Previous image"
                                     >
                                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_back</span>
                                     </button>
@@ -273,7 +318,8 @@ const ProductDetail = () => {
                                                     : prev + 1
                                             )
                                         }
-                                        className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full bg-surface-container-low/80 backdrop-blur-sm text-on-surface border border-surface-container-high hover:bg-surface-container"
+                                        className="absolute right-3 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center opacity-85 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 rounded-full bg-surface-container-low/80 backdrop-blur-sm text-on-surface border border-surface-container-high hover:bg-surface-container"
+                                        aria-label="Next image"
                                     >
                                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_forward</span>
                                     </button>
@@ -292,7 +338,7 @@ const ProductDetail = () => {
                             Back
                         </button>
 
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-on-surface leading-[1.1] mb-6">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-on-surface leading-[1.15] mb-4 sm:mb-6 break-words">
                             {product.title}
                         </h1>
 
@@ -305,15 +351,15 @@ const ProductDetail = () => {
                             </div>
                             
                             {displayPrice?.mrp > displayPrice?.amount && (
-                                <div className="flex items-center gap-3 mt-1">
-                                    <div className="flex items-center gap-1 text-outline line-through text-sm">
+                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 flex-wrap">
+                                    <div className="flex items-center gap-1 text-outline line-through text-xs sm:text-sm">
                                         <span>{{ "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}</span>
                                         <span>{displayPrice.mrp.toLocaleString()}</span>
                                     </div>
-                                    <div className="bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded text-xs tracking-wider">
+                                    <div className="bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded text-[10px] sm:text-xs tracking-wider">
                                         SAVE {Math.round(((displayPrice.mrp - displayPrice.amount) / displayPrice.mrp) * 100)}%
                                     </div>
-                                    <div className="text-emerald-500 text-xs font-semibold">
+                                    <div className="text-emerald-500 text-[11px] sm:text-xs font-semibold">
                                         (Save { { "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}{(displayPrice.mrp - displayPrice.amount).toLocaleString()})
                                     </div>
                                 </div>

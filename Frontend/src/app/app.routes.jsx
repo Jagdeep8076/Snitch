@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Home from "../features/products/pages/Home";
 import Register from "../features/auth/pages/Register";
 import Login from "../features/auth/pages/Login";
+import VerifyEmail from "../features/auth/pages/VerifyEmail";
 import CreateProduct from "../features/products/pages/createProduct";
 import Dashboard from "../features/products/pages/Dashboard";
 import Protected from "../features/auth/components/Protected";
@@ -26,6 +27,11 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
     errorElement: <RouteErrorBoundary />,
   },
   {

@@ -10,7 +10,7 @@ import gsap from "gsap";
 ───────────────────────────────────────────── */
 const StatCard = ({ icon, label, value, accent }) => (
   <div
-    className="stat-card rounded-2xl border border-surface-container-high p-5 flex items-center gap-4 relative overflow-hidden"
+    className="stat-card rounded-2xl border border-surface-container-high p-4 sm:p-5 flex items-center gap-3.5 sm:gap-4 relative overflow-hidden"
     style={{ background: "rgba(24,24,28,0.7)", backdropFilter: "blur(12px)" }}
   >
     <div
@@ -227,7 +227,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
           <StatCard icon="inventory_2" label="Total Products" value={loading ? "—" : productCount} accent="#e8e8ea" />
           <StatCard
             icon="photo_library"

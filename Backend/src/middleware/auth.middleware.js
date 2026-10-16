@@ -1,6 +1,6 @@
-import jwt from "jsonwebtoken"
-import { config } from "../config/config.js"
-import userModel from "../models/user.model.js"
+import jwt from "jsonwebtoken";
+import { config } from "../config/config.js";
+import userModel from "../models/user.model.js";
 
 export const authenticateUser = async (req, res, next) => {
     const token =
@@ -10,7 +10,7 @@ export const authenticateUser = async (req, res, next) => {
             : null);
 
     if (!token) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     try {
         const decoded = jwt.verify(token, config.JWT_SECRET);
@@ -18,13 +18,12 @@ export const authenticateUser = async (req, res, next) => {
         const user = await userModel.findById(decoded.id);
 
         if (!user) {
-            return res.status(401).json({ message: "Unauthorized" });
+            return res.status(401).json({ success: false, message: "Unauthorized" });
         }
         req.user = user;
         next();
     } catch (err) {
-        console.error("AUTH ERROR:", err);
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 };
 
@@ -37,27 +36,26 @@ export const authenticateSeller = async (req, res, next) => {
 
     if (!token) {
         return res.status(401).json({
+            success: false,
             message: "Unauthorized",
         });
     }
-    
-    try{
-        const decoded = jwt.verify(token, config.JWT_SECRET)
 
-        const user = await userModel.findById(decoded.id) 
+    try {
+        const decoded = jwt.verify(token, config.JWT_SECRET);
 
-        if(!user){
-            return res.status(401).json({ message: "Unauthorized" })
+        const user = await userModel.findById(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
         }
-   
-       if(user.role !== "seller") {
-        return res.status(403).json({ message: "Forbidden" })
-       }   
-  req.user = user
-  next()
 
-    } catch( err ){
-      console.log(err)
-     return res.status(401).json({ message: "Unauthorized" })
+        if (user.role !== "seller") {
+            return res.status(403).json({ success: false, message: "Forbidden: Seller role required" });
+        }
+        req.user = user;
+        next();
+    } catch (err) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
     }
-}
+};

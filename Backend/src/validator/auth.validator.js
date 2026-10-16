@@ -6,7 +6,8 @@ function validateRequest(req, res, next) {
     if (!errors.isEmpty()) {
         return res.status(400).json({
             success: false,
-            errors: errors.array()
+            message: errors.array()[0]?.msg || "Validation error",
+            errors: errors.array(),
         });
     }
 
@@ -18,22 +19,16 @@ export const validateRegisterUser = [
         .trim()
         .notEmpty()
         .withMessage("Full name is required")
-        .isLength({ min: 3, max: 50 })
-        .withMessage("Full name must be between 3 and 50 characters"),
+        .isLength({ min: 2, max: 60 })
+        .withMessage("Full name must be between 2 and 60 characters"),
 
     body("email")
         .trim()
         .notEmpty()
         .withMessage("Email is required")
         .isEmail()
-        .withMessage("Invalid email format"),
-
-    body("contact")
-        .trim()
-        .notEmpty()
-        .withMessage("Contact is required")
-        .matches(/^\d{10}$/)
-        .withMessage("Contact must be a 10-digit number"),
+        .withMessage("Invalid email format")
+        .normalizeEmail(),
 
     body("password")
         .notEmpty()
@@ -41,41 +36,45 @@ export const validateRegisterUser = [
         .isLength({ min: 6 })
         .withMessage("Password must be at least 6 characters"),
 
+    body("confirmPassword")
+        .optional()
+        .custom((value, { req }) => {
+            if (value && value !== req.body.password) {
+                throw new Error("Passwords do not match");
+            }
+            return true;
+        }),
+
+    body("contact")
+        .optional({ checkFalsy: true })
+        .trim()
+        .matches(/^\d{10}$/)
+        .withMessage("Contact must be a 10-digit number"),
+
     body("isSeller")
-        .notEmpty()
-        .withMessage("isSeller is required")
+        .optional()
         .isBoolean()
         .withMessage("isSeller must be a boolean value"),
 
     body("address")
-        .trim()
-        .notEmpty()
-        .withMessage("Address is required"),
+        .optional({ checkFalsy: true })
+        .trim(),
 
     body("city")
-        .trim()
-        .notEmpty()
-        .withMessage("City is required"),
+        .optional({ checkFalsy: true })
+        .trim(),
 
     body("state")
-        .trim()
-        .notEmpty()
-        .withMessage("State is required"),
+        .optional({ checkFalsy: true })
+        .trim(),
 
     body("pincode")
+        .optional({ checkFalsy: true })
         .trim()
-        .notEmpty()
-        .withMessage("Pincode is required")
         .matches(/^\d{6}$/)
         .withMessage("Pincode must be a 6-digit number"),
 
-    body("isSeller")
-        .notEmpty()
-        .withMessage("isSeller is required")
-        .isBoolean()
-        .withMessage("isSeller must be a boolean value"),
-
-    validateRequest
+    validateRequest,
 ];
 
 export const validateLoginUser = [
@@ -84,13 +83,33 @@ export const validateLoginUser = [
         .notEmpty()
         .withMessage("Email is required")
         .isEmail()
-        .withMessage("Invalid email format"),
+        .withMessage("Invalid email format")
+        .normalizeEmail(),
 
     body("password")
         .notEmpty()
-        .withMessage("Password is required")
-        .isLength({ min: 6 })
-        .withMessage("Password must be at least 6 characters"),
+        .withMessage("Password is required"),
 
-    validateRequest
+    validateRequest,
 ];
+
+export const validateVerifyEmail = [
+    body("token")
+        .trim()
+        .notEmpty()
+        .withMessage("Verification token is required"),
+
+    validateRequest,
+];
+
+export const validateResendVerification = [
+    body("email")
+        .trim()
+        .notEmpty()
+        .withMessage("Email is required")
+        .isEmail()
+        .withMessage("Invalid email format")
+        .normalizeEmail(),
+
+    validateRequest,
+];

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useProduct } from '../hook/useProduct.js'
 import { useParams, useNavigate } from 'react-router-dom'
 
@@ -247,7 +247,7 @@ const SellerProductDetail = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background text-on-surface py-12 px-4 font-[Plus_Jakarta_Sans] antialiased">
+        <div className="min-h-screen bg-background text-on-surface py-8 sm:py-12 px-4 sm:px-6 font-[Plus_Jakarta_Sans] antialiased">
 
             <div className="max-w-6xl mx-auto">
 
@@ -325,7 +325,7 @@ const SellerProductDetail = () => {
                             Seller Product
                         </p>
 
-                        <h1 className="text-4xl lg:text-5xl font-bold mb-6 tracking-tight">
+                        <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 tracking-tight break-words">
                             {product.title}
                         </h1>
 
@@ -591,8 +591,8 @@ const SellerProductDetail = () => {
 
             {/* Variant Form Modal */}
             {isVariantFormOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-surface-container border border-surface-container-high rounded-2xl p-6 w-full max-w-2xl my-auto">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+                    <div className="bg-surface-container border border-surface-container-high rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto my-auto">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-on-surface">Add New Variant</h2>
                             <button onClick={() => setIsVariantFormOpen(false)} className="text-outline hover:text-on-surface">
@@ -627,7 +627,7 @@ const SellerProductDetail = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider text-secondary mb-2">Price Amount</label>
                                     <input type="number" min="0" value={newVariant.price.amount} onChange={e => setNewVariant(p => ({...p, price: {...p.price, amount: e.target.value}}))} className="w-full h-10 bg-background border border-surface-container-high rounded-lg px-3 text-sm text-on-surface outline-none focus:border-primary" />
@@ -654,7 +654,7 @@ const SellerProductDetail = () => {
 
                             <div>
                                 <label className="block text-xs uppercase tracking-wider text-secondary mb-2">Attributes</label>
-                                <div className="flex gap-2 mb-3">
+                                <div className="flex flex-col sm:flex-row gap-2 mb-3">
                                     <input type="text" placeholder="e.g. Size" value={attrKey} onChange={e => setAttrKey(e.target.value)} className="flex-1 h-10 bg-background border border-surface-container-high rounded-lg px-3 text-sm text-on-surface outline-none focus:border-primary" />
                                     <input type="text" placeholder="e.g. XL" value={attrValue} onChange={e => setAttrValue(e.target.value)} className="flex-1 h-10 bg-background border border-surface-container-high rounded-lg px-3 text-sm text-on-surface outline-none focus:border-primary" />
                                     <button type="button" onClick={handleAddAttribute} className="h-10 px-4 bg-surface-container-high text-on-surface rounded-lg font-bold hover:bg-surface-container-highest transition-colors">Add</button>
