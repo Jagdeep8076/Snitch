@@ -6,6 +6,30 @@ const authApiInstance = axios.create({
     withCredentials: true,
 });
 
+authApiInstance.interceptors.request.use((config) => {
+    try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("snitch_token") : null;
+        if (token && !config.headers.Authorization) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+    } catch (_) {}
+    return config;
+});
+
+authApiInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            try {
+                if (typeof window !== "undefined") {
+                    localStorage.removeItem("snitch_token");
+                }
+            } catch (_) {}
+        }
+        return Promise.reject(error);
+    }
+);
+
 export async function register({
     email,
     contact,
@@ -58,6 +82,22 @@ export async function getMe() {
 }
 
 export async function logout() {
-    const response = await authApiInstance.post("/logout");
-    return response.data;
+    try {
+        if (typeof window !== "undefined") {
+            localStorage.removeItem("snitch_token");
+            sessionStorage.clear();
+        }
+    } catch (_) {}
+
+    try {
+        const response = await authApiInstance.post("/logout");
+        return response.data;
+    } finally {
+        try {
+            if (typeof window !== "undefined") {
+                localStorage.removeItem("snitch_token");
+                sessionStorage.clear();
+            }
+        } catch (_) {}
+    }
 }

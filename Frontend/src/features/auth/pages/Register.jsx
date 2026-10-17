@@ -675,7 +675,7 @@ const Register = () => {
 
                   {/* Phase 5: Google OAuth Registration explicit semantics */}
                   <a
-                    href={`${API_BASE_URL}/auth/google?action=register${safeRedirect !== "/" ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}`}
+                    href={`${API_BASE_URL}/auth/google?action=register${safeRedirect !== "/" ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}${typeof window !== "undefined" ? `&origin=${encodeURIComponent(window.location.origin)}` : ""}`}
                     className="w-full h-12 bg-white text-black rounded-full text-sm font-semibold flex items-center justify-center gap-3 border border-white/10 hover:bg-gray-100 active:scale-[0.99] transition-all duration-150"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

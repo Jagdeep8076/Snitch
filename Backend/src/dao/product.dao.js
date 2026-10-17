@@ -6,27 +6,23 @@ export const stockOfVariant = async (productId, variantId) => {
         !productId ||
         !variantId ||
         !mongoose.Types.ObjectId.isValid(productId) ||
-        !mongoose.Types.ObjectId.isValid(variantId)
+        (variantId !== "none" && !mongoose.Types.ObjectId.isValid(variantId))
     ) {
-        throw new Error("Product or variant not found");
+        return 0;
     }
 
-    const product = await productModel.findOne({
-        _id: productId,
-        "variants._id": variantId,
-    });
-
+    const product = await productModel.findById(productId);
     if (!product) {
-        throw new Error("Product or variant not found");
+        return 0;
+    }
+
+    if (variantId === "none" || !Array.isArray(product.variants) || product.variants.length === 0) {
+        return 999;
     }
 
     const variant = product.variants.find(
-        (variant) => variant._id.toString() === variantId.toString()
+        (v) => v._id.toString() === variantId.toString()
     );
 
-    if (!variant) {
-        throw new Error("Variant not found");
-    }
-
-    return Number(variant.stock ?? 0);
+    return variant ? Number(variant.stock ?? 0) : 0;
 };

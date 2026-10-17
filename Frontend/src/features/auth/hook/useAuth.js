@@ -14,6 +14,7 @@ import {
 } from "../service/auth.api.js";
 
 import { useDispatch } from "react-redux";
+import { clearItems } from "../../cart/state/cart.Slice.js";
 
 export const useAuth = () => {
     const dispatch = useDispatch();
@@ -47,6 +48,15 @@ export const useAuth = () => {
                 isSeller
             });
 
+            if (data?.token) {
+                try {
+                    localStorage.setItem("snitch_token", data.token);
+                } catch (_) {}
+            }
+            if (data?.user) {
+                dispatch(setUser(data.user));
+            }
+
             return data;
         } catch (error) {
             const msg = error.response?.data?.message || "Registration failed";
@@ -71,6 +81,12 @@ export const useAuth = () => {
                 password
             });
 
+            if (data?.token) {
+                try {
+                    localStorage.setItem("snitch_token", data.token);
+                } catch (_) {}
+            }
+
             dispatch(setUser(data?.user || data));
             return data;
         } catch (error) {
@@ -83,6 +99,7 @@ export const useAuth = () => {
                 message: msg,
                 isUnverified: Boolean(errData.isUnverified),
                 notRegistered: Boolean(errData.notRegistered),
+                isGoogleAccount: Boolean(errData.isGoogleAccount),
                 email: errData.email || email,
             };
         } finally {
@@ -96,6 +113,11 @@ export const useAuth = () => {
             dispatch(setError(null));
 
             const data = await verifyEmail({ token });
+            if (data?.token) {
+                try {
+                    localStorage.setItem("snitch_token", data.token);
+                } catch (_) {}
+            }
             if (data?.user) {
                 dispatch(setUser(data.user));
             }
@@ -138,10 +160,22 @@ export const useAuth = () => {
         try {
             dispatch(setLoading(true));
             const data = await getMe();
-            dispatch(setUser(data.user));
+            if (data?.user) {
+                dispatch(setUser(data.user));
+            } else {
+                try {
+                    localStorage.removeItem("snitch_token");
+                    sessionStorage.clear();
+                } catch (_) {}
+                dispatch(setUser(null));
+            }
             return data;
         } catch (_err) {
             // Unauthenticated or expired session
+            try {
+                localStorage.removeItem("snitch_token");
+                sessionStorage.clear();
+            } catch (_) {}
             dispatch(setUser(null));
             return null;
         } finally {
@@ -152,11 +186,24 @@ export const useAuth = () => {
     async function handleLogout() {
         try {
             dispatch(setLoading(true));
+            // Immediate optimistic local purge
+            try {
+                localStorage.removeItem("snitch_token");
+                sessionStorage.clear();
+            } catch (_) {}
+            dispatch(setUser(null));
+            dispatch(clearItems());
+
             await logout();
         } catch (err) {
             console.error("Logout error:", err);
         } finally {
+            try {
+                localStorage.removeItem("snitch_token");
+                sessionStorage.clear();
+            } catch (_) {}
             dispatch(setUser(null));
+            dispatch(clearItems());
             dispatch(setLoading(false));
         }
     }

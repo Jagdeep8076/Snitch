@@ -4,10 +4,6 @@ import { config } from "../config/config.js";
 
 let razorpayClient = null;
 
-/**
- * Returns a singleton Razorpay client instance.
- * Checks for constructor capitalization and CJS/ESM compatibility.
- */
 export const getRazorpayClient = () => {
     if (!razorpayClient) {
         const RazorpayClass = typeof Razorpay === "function" ? Razorpay : Razorpay?.default;
@@ -25,14 +21,6 @@ export const getRazorpayClient = () => {
     return razorpayClient;
 };
 
-/**
- * Creates a Razorpay order.
- * @param {Object} params
- * @param {number} params.amount - Order amount in Rupees (converted to paise internally)
- * @param {string} [params.currency="INR"] - Currency code
- * @param {string} [params.receipt] - Optional receipt identifier
- * @param {Object} [params.notes] - Optional key-value notes
- */
 export const createOrder = async ({ amount, currency = "INR", receipt, notes = {} }) => {
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
@@ -41,7 +29,7 @@ export const createOrder = async ({ amount, currency = "INR", receipt, notes = {
 
     const client = getRazorpayClient();
     const options = {
-        amount: Math.round(numericAmount * 100), // Razorpay expects amount in paise
+        amount: Math.round(numericAmount * 100), // convert to paise
         currency: (currency || "INR").trim(),
         receipt: receipt || `rcpt_${Date.now()}`,
         notes,
@@ -51,14 +39,6 @@ export const createOrder = async ({ amount, currency = "INR", receipt, notes = {
     return order;
 };
 
-/**
- * Verifies Razorpay payment signature using HMAC SHA256.
- * @param {Object} params
- * @param {string} params.razorpay_order_id
- * @param {string} params.razorpay_payment_id
- * @param {string} params.razorpay_signature
- * @returns {boolean} True if the signature matches
- */
 export const verifyPaymentSignature = ({
     razorpay_order_id,
     razorpay_payment_id,

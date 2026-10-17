@@ -17,9 +17,9 @@ export const useProduct = () => {
         return data.products
     }
 
-    async function handleGetAllProducts({ sort } = {}) {
+    async function handleGetAllProducts({ sort, category } = {}) {
 
-        const data = await getAllProducts({ sort })
+        const data = await getAllProducts({ sort, category })
         dispatch(setProducts(data.products))
         return data.products
     }

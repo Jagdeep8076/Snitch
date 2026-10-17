@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { logout as logoutApi } from "../../auth/service/auth.api.js";
-import { setUser } from "../../auth/state/auth.slice.js";
+import { useAuth } from "../../auth/hook/useAuth.js";
 import axios from "axios";
 import { API_BASE_URL } from "../../../config/api.config.js";
 
@@ -40,6 +39,7 @@ const Nav = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { handleLogout: authLogout } = useAuth();
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -152,14 +152,13 @@ const Nav = () => {
 
   const handleLogout = async () => {
     try {
-      await logoutApi();
+      setProfileOpen(false);
+      setMobileMenuOpen(false);
+      await authLogout();
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      dispatch(setUser(null));
-      setProfileOpen(false);
-      setMobileMenuOpen(false);
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   };
 
@@ -321,9 +320,10 @@ const Nav = () => {
                   )}
 
                   {!searchLoading && searchResults.map((product) => {
-                    const img = product.images?.[0]?.url || null;
-                    const price = product.price?.amount;
-                    const currency = product.price?.currency ?? "INR";
+                    const img = product.images?.[0]?.url || product.images?.[0] || null;
+                    const rawPrice = product.price ?? product.prices;
+                    const price = typeof rawPrice === "object" ? (rawPrice?.amount ?? rawPrice?.price) : rawPrice;
+                    const currency = typeof rawPrice === "object" ? (rawPrice?.currency ?? "INR") : "INR";
                     const symbols = { INR: "₹", USD: "$", EUR: "€", GBP: "£" };
                     const symbol = symbols[currency] ?? "₹";
                     return (

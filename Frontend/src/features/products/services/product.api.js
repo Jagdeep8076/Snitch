@@ -6,6 +6,30 @@ const productApiInstance = axios.create({
     withCredentials: true,
 });
 
+productApiInstance.interceptors.request.use((config) => {
+    try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("snitch_token") : null;
+        if (token && !config.headers.Authorization) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+    } catch (_) {}
+    return config;
+});
+
+productApiInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            try {
+                if (typeof window !== "undefined") {
+                    localStorage.removeItem("snitch_token");
+                }
+            } catch (_) {}
+        }
+        return Promise.reject(error);
+    }
+);
+
 
 
  export async function createProduct(formData) { 
@@ -22,9 +46,10 @@ const productApiInstance = axios.create({
     return response.data
  }
 
- export async function getAllProducts({ sort } = {}) {
+ export async function getAllProducts({ sort, category } = {}) {
    const params = {};
    if (sort) params.sort = sort;
+   if (category && category !== "All") params.category = category;
    const response = await productApiInstance.get("/", { params })
 
    return response.data

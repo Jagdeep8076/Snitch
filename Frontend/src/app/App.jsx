@@ -12,11 +12,25 @@ function App() {
   const user = useSelector((state) => state.auth?.user);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlToken = searchParams.get("token");
+        if (urlToken) {
+          localStorage.setItem("snitch_token", urlToken);
+          searchParams.delete("token");
+          searchParams.delete("auth");
+          const remainingQuery = searchParams.toString();
+          const cleanUrl = window.location.pathname + (remainingQuery ? `?${remainingQuery}` : "") + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      } catch (_) {}
+    }
     handleGetMe();
   }, []);
 
   useEffect(() => {
-    if (user && user.role !== 'seller') {
+    if (user) {
       handleGetCart().catch(() => {});
     }
   }, [user]);

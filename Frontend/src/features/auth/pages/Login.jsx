@@ -24,6 +24,7 @@ const Login = () => {
     // States for specific authentication cases
     const [unverifiedAccount, setUnverifiedAccount] = useState(null);
     const [notRegisteredAccount, setNotRegisteredAccount] = useState(false);
+    const [isGoogleAccount, setIsGoogleAccount] = useState(false);
     const [resendStatus, setResendStatus] = useState("");
     const [resendMsg, setResendMsg] = useState("");
 
@@ -67,12 +68,14 @@ const Login = () => {
         }));
         if (unverifiedAccount) setUnverifiedAccount(null);
         if (notRegisteredAccount) setNotRegisteredAccount(false);
+        if (isGoogleAccount) setIsGoogleAccount(false);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setUnverifiedAccount(null);
         setNotRegisteredAccount(false);
+        setIsGoogleAccount(false);
         setResendMsg("");
 
         try {
@@ -86,6 +89,8 @@ const Login = () => {
                     setUnverifiedAccount({ email: result.email || formData.email });
                 } else if (result?.notRegistered) {
                     setNotRegisteredAccount(true);
+                } else if (result?.isGoogleAccount) {
+                    setIsGoogleAccount(true);
                 }
                 return;
             }
@@ -338,8 +343,23 @@ const Login = () => {
                                     </div>
                                 )}
 
+                                {/* Google-only account notification */}
+                                {isGoogleAccount && (
+                                    <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-amber-400 shrink-0">
+                                            info
+                                        </span>
+                                        <div className="text-xs text-amber-200 space-y-1">
+                                            <p className="font-semibold text-white">Google Account Detected</p>
+                                            <p className="text-amber-300/90">
+                                                This account is linked with Google. Please sign in below using <strong>"Continue with Google"</strong>.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Standard error banner (generic message) */}
-                                {error && !unverifiedAccount && !notRegisteredAccount && (
+                                {error && !unverifiedAccount && !notRegisteredAccount && !isGoogleAccount && (
                                     <div className="mb-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 flex items-start gap-3">
                                         <span
                                             className="material-symbols-outlined text-red-400"
@@ -445,7 +465,7 @@ const Login = () => {
 
                                     {/* PHASE 6: Explicit Google Login with destination preservation */}
                                     <a
-                                        href={`${API_BASE_URL}/auth/google?action=login&redirect=${encodeURIComponent(safeDestination)}`}
+                                        href={`${API_BASE_URL}/auth/google?action=login&redirect=${encodeURIComponent(safeDestination)}${typeof window !== "undefined" ? `&origin=${encodeURIComponent(window.location.origin)}` : ""}`}
                                         className="w-full h-12 bg-white text-black rounded-full text-sm font-semibold flex items-center justify-center gap-3 border border-white/10 hover:bg-gray-100 active:scale-[0.99] transition-all duration-150"
                                     >
                                         <svg

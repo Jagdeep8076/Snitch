@@ -84,6 +84,16 @@ const ImageSlot = ({ index, file, onAdd, onRemove }) => {
 };
 
 
+const CATEGORIES = [
+  "Shirts",
+  "T-Shirts",
+  "Hoodies & Sweatshirts",
+  "Jeans & Trousers",
+  "Jackets & Outerwear",
+  "Streetwear",
+  "Accessories",
+];
+
 const CreateProduct = () => {
   const { handleCreateProduct } = useProduct();
   const navigate = useNavigate();
@@ -91,6 +101,7 @@ const CreateProduct = () => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    category: "Shirts",
     priceAmount: "",
     priceCurrency: "INR",
   });
@@ -130,6 +141,7 @@ const CreateProduct = () => {
       const fd = new FormData();
       fd.append("title", formData.title);
       fd.append("description", formData.description);
+      fd.append("category", formData.category);
       fd.append("priceAmount", formData.priceAmount);
       fd.append("priceCurrency", formData.priceCurrency);
       images.forEach((img) => {
@@ -342,6 +354,33 @@ const CreateProduct = () => {
                         />
                       </div>
                       <span className="text-[11px] text-outline text-right">{formData.title.length}/120</span>
+                    </div>
+
+                    {/* Category */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-on-surface" htmlFor="category">
+                        Category
+                      </label>
+                      <div className="relative flex items-center">
+                        <span className="absolute left-4 text-outline pointer-events-none">
+                          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>category</span>
+                        </span>
+                        <select
+                          className={`${inputCls} pl-11 pr-8 appearance-none`}
+                          id="category"
+                          name="category"
+                          value={formData.category}
+                          onChange={handleChange}
+                          required
+                        >
+                          {CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" style={{ fontSize: "18px" }}>expand_more</span>
+                      </div>
                     </div>
 
                     {/* Description */}

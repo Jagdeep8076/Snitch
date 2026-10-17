@@ -3,8 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useProduct } from "../hook/useProduct.js";
-import { logout as logoutApi } from "../../auth/service/auth.api.js";
-import { setUser } from "../../auth/state/auth.slice.js";
+import { useAuth } from "../../auth/hook/useAuth.js";
 import gsap from "gsap";
 import * as THREE from "three";
 
@@ -181,8 +180,9 @@ const ProductCard = ({ product, index }) => {
   const cardRef = useRef(null);
   const coverImage =
     product.images?.[0]?.url || product.images?.[0] || product.image || null;
-  const price = product.price?.amount ?? product.price ?? "—";
-  const currency = product.price?.currency ?? "INR";
+  const rawPrice = product.price ?? product.prices;
+  const price = typeof rawPrice === "object" ? (rawPrice?.amount ?? rawPrice?.price ?? null) : (rawPrice ?? null);
+  const currency = typeof rawPrice === "object" ? (rawPrice?.currency ?? "INR") : "INR";
   const symbols = {
     INR: "₹",
     USD: "$",
@@ -270,8 +270,7 @@ const ProductCard = ({ product, index }) => {
         </p>
         <div className="flex items-center justify-between gap-1.5 flex-wrap">
           <span className="text-sm sm:text-base font-bold text-white">
-            {symbol}
-            {Number(price).toLocaleString("en-IN")}
+            {price != null && !isNaN(Number(price)) ? `${symbol}${Number(price).toLocaleString("en-IN")}` : "Price On Request"}
           </span>
           <span
             className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-on-surface-variant border border-white/[0.06]"
@@ -379,6 +378,7 @@ const Home = () => {
   const { handleGetAllProducts } = useProduct();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { handleLogout: authLogout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -386,12 +386,12 @@ const Home = () => {
 
   const handleLogout = async () => {
     try {
-      await logoutApi();
-      dispatch(setUser(null));
       setShowUserMenu(false);
-      navigate("/login");
+      await authLogout();
     } catch (err) {
       console.error("Logout error", err);
+    } finally {
+      navigate("/login", { replace: true });
     }
   };
 

@@ -2,176 +2,22 @@ import mongoose from "mongoose";
 import cartModel from "../models/cart.model.js";
 import productModel from "../models/product.model.js";
 import orderModel from "../models/order.model.js";
+import paymentModel from "../models/payment.model.js";
 import { stockOfVariant } from "../dao/product.dao.js";
+import { getCartDetails } from "../dao/cart.dao.js";
 import { createOrder, verifyPaymentSignature } from "../services/payment.service.js";
 import { config } from "../config/config.js";
 
 /**
- * Helper to fetch and format the user's cart using an aggregation pipeline.
- * Ensures:
- * - Full product details are populated with their variants array intact.
- * - The selected variant is identified via $filter without destructively unwinding product.variants.
- * - Deleted or invalid products and variants are filtered out safely.
- * - Item subtotals and the cart's total price are calculated correctly.
- * - If the cart is empty or has no valid items, returns a consistent empty cart structure.
+ * Helper to fetch formatted cart details for a user.
  */
 export const fetchCartResponse = async (userId) => {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-
-    let existingCart = await cartModel.findOne({ user: userObjectId });
-    if (!existingCart) {
-        existingCart = await cartModel.create({
-            user: userObjectId,
-            items: [],
-        });
-    }
-
-    if (!existingCart.items || existingCart.items.length === 0) {
-        return {
-            _id: existingCart._id,
-            user: userObjectId,
-            items: [],
-            totalPrice: 0,
-            currency: "INR",
-        };
-    }
-
-    const cart = await cartModel.aggregate([
-        {
-            $match: {
-                _id: existingCart._id,
-            },
-        },
-        {
-            $unwind: "$items",
-        },
-        {
-            $lookup: {
-                from: productModel.collection.name,
-                localField: "items.product",
-                foreignField: "_id",
-                as: "productDetails",
-            },
-        },
-        {
-            $unwind: {
-                path: "$productDetails",
-                preserveNullAndEmptyArrays: false,
-            },
-        },
-        {
-            $addFields: {
-                matchedVariant: {
-                    $arrayElemAt: [
-                        {
-                            $filter: {
-                                input: "$productDetails.variants",
-                                as: "v",
-                                cond: {
-                                    $eq: [
-                                        { $toString: "$$v._id" },
-                                        { $toString: { $ifNull: ["$items.variant", ""] } },
-                                    ],
-                                },
-                            },
-                        },
-                        0,
-                    ],
-                },
-            },
-        },
-        {
-            $match: {
-                matchedVariant: { $ne: null },
-            },
-        },
-        {
-            $addFields: {
-                effectivePrice: {
-                    $ifNull: [
-                        "$items.price",
-                        {
-                            $ifNull: [
-                                "$matchedVariant.price",
-                                "$productDetails.price",
-                            ],
-                        },
-                    ],
-                },
-            },
-        },
-        {
-            $addFields: {
-                itemSubtotal: {
-                    $multiply: [
-                        "$items.quantity",
-                        { $ifNull: ["$effectivePrice.amount", 0] },
-                    ],
-                },
-                formattedItem: {
-                    _id: "$items._id",
-                    product: "$productDetails",
-                    variant: "$items.variant",
-                    selectedVariant: "$matchedVariant",
-                    quantity: "$items.quantity",
-                    price: "$effectivePrice",
-                    subtotal: {
-                        $multiply: [
-                            "$items.quantity",
-                            { $ifNull: ["$effectivePrice.amount", 0] },
-                        ],
-                    },
-                },
-            },
-        },
-        {
-            $group: {
-                _id: "$_id",
-                user: { $first: "$user" },
-                items: { $push: "$formattedItem" },
-                totalPrice: { $sum: "$itemSubtotal" },
-                currency: {
-                    $first: { $ifNull: ["$effectivePrice.currency", "INR"] },
-                },
-            },
-        },
-        {
-            $project: {
-                _id: 1,
-                user: 1,
-                items: 1,
-                totalPrice: 1,
-                currency: { $ifNull: ["$currency", "INR"] },
-            },
-        },
-    ]);
-
-    if (!cart || cart.length === 0) {
-        if (existingCart.items.length > 0) {
-            existingCart.items = [];
-            await existingCart.save();
-        }
-        return {
-            _id: existingCart._id,
-            user: userObjectId,
-            items: [],
-            totalPrice: 0,
-            currency: "INR",
-        };
-    }
-
-    // Sync DB items if invalid/deleted items were filtered out
-    if (cart[0].items.length !== existingCart.items.length) {
-        const validItemIds = cart[0].items.map((i) => i._id.toString());
-        existingCart.items = existingCart.items.filter((i) =>
-            validItemIds.includes(i._id.toString())
-        );
-        await existingCart.save();
-    }
-
-    return cart[0];
+    return await getCartDetails(userId);
 };
 
+/**
+ * Add product/variant to user's cart.
+ */
 export const addToCart = async (req, res) => {
     try {
         if (!req.user?._id) {
@@ -184,9 +30,9 @@ export const addToCart = async (req, res) => {
         const { productId, variantId } = req.params;
         const { quantity = 1 } = req.body;
 
-        if (!mongoose.Types.ObjectId.isValid(productId) || !mongoose.Types.ObjectId.isValid(variantId)) {
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
             return res.status(400).json({
-                message: "Invalid product ID or variant ID",
+                message: "Invalid product ID",
                 success: false,
             });
         }
@@ -199,39 +45,42 @@ export const addToCart = async (req, res) => {
             });
         }
 
-        const product = await productModel.findOne({
-            _id: productId,
-            "variants._id": variantId,
-        });
-
+        const product = await productModel.findById(productId);
         if (!product) {
             return res.status(404).json({
-                message: "Product and variant not found",
+                message: "Product not found",
                 success: false,
             });
         }
 
-        const variant = product.variants.find(
-            (item) => item._id.toString() === variantId
-        );
+        const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
+        let selectedVariantId = null;
+        let variantObj = null;
 
-        if (!variant) {
-            return res.status(404).json({
-                message: "Variant not found",
-                success: false,
-            });
+        if (hasVariants && variantId && variantId !== "none" && variantId !== "undefined") {
+            variantObj = product.variants.find((v) => v._id.toString() === variantId.toString());
+            if (!variantObj) {
+                return res.status(404).json({
+                    message: "Selected variant not found",
+                    success: false,
+                });
+            }
+            selectedVariantId = variantObj._id;
+        } else if (hasVariants) {
+            variantObj = product.variants[0];
+            selectedVariantId = variantObj._id;
         }
 
-        const stock = Number(variant.stock ?? 0);
+        const stock = variantObj ? Number(variantObj.stock ?? 0) : 999;
         if (stock <= 0) {
             return res.status(400).json({
-                message: "This variant is out of stock",
+                message: "This item is currently out of stock",
                 success: false,
             });
         }
 
-        const itemPrice = (variant.price && variant.price.amount != null)
-            ? variant.price
+        const itemPrice = (variantObj?.price && variantObj.price.amount != null)
+            ? variantObj.price
             : product.price;
 
         if (!itemPrice || itemPrice.amount == null) {
@@ -241,10 +90,7 @@ export const addToCart = async (req, res) => {
             });
         }
 
-        let cart = await cartModel.findOne({
-            user: req.user._id,
-        });
-
+        let cart = await cartModel.findOne({ user: req.user._id });
         if (!cart) {
             cart = await cartModel.create({
                 user: req.user._id,
@@ -252,11 +98,12 @@ export const addToCart = async (req, res) => {
             });
         }
 
-        const existingItem = cart.items.find(
-            (item) =>
-                item.product.toString() === productId &&
-                item.variant?.toString() === variantId
-        );
+        const existingItem = cart.items.find((item) => {
+            const matchesProduct = item.product.toString() === productId.toString();
+            if (!matchesProduct) return false;
+            if (!selectedVariantId && !item.variant) return true;
+            return String(item.variant) === String(selectedVariantId);
+        });
 
         if (existingItem) {
             if (existingItem.quantity + parsedQty > stock) {
@@ -267,13 +114,11 @@ export const addToCart = async (req, res) => {
             }
 
             existingItem.quantity += parsedQty;
-            if (!existingItem.price || existingItem.price.amount == null) {
-                existingItem.price = {
-                    amount: itemPrice.amount,
-                    currency: itemPrice.currency || "INR",
-                    mrp: itemPrice.mrp ?? null,
-                };
-            }
+            existingItem.price = {
+                amount: itemPrice.amount,
+                currency: itemPrice.currency || "INR",
+                mrp: itemPrice.mrp ?? null,
+            };
         } else {
             if (parsedQty > stock) {
                 return res.status(400).json({
@@ -284,7 +129,7 @@ export const addToCart = async (req, res) => {
 
             cart.items.push({
                 product: productId,
-                variant: variantId,
+                variant: selectedVariantId,
                 quantity: parsedQty,
                 price: {
                     amount: itemPrice.amount,
@@ -305,14 +150,16 @@ export const addToCart = async (req, res) => {
         });
     } catch (error) {
         console.error("ADD TO CART ERROR:", error);
-
         return res.status(500).json({
-            message: error.message,
+            message: error.message || "Failed to add to cart",
             success: false,
         });
     }
 };
 
+/**
+ * Get current user's cart.
+ */
 export const getCart = async (req, res) => {
     try {
         if (!req.user?._id) {
@@ -331,14 +178,79 @@ export const getCart = async (req, res) => {
         });
     } catch (error) {
         console.error("GET CART ERROR:", error);
-
         return res.status(500).json({
-            message: error.message,
+            message: error.message || "Failed to get cart",
             success: false,
         });
     }
 };
 
+/**
+ * Increment quantity of a specific product+variant by 1.
+ */
+export const incrementCartItemQuantity = async (req, res) => {
+    try {
+        if (!req.user?._id) {
+            return res.status(401).json({
+                message: "Unauthorized",
+                success: false,
+            });
+        }
+
+        const { productId, variantId } = req.params;
+
+        const cart = await cartModel.findOne({ user: req.user._id });
+        if (!cart) {
+            return res.status(404).json({
+                message: "Cart not found",
+                success: false,
+            });
+        }
+
+        const item = cart.items.find((i) => {
+            const matchesProduct = i.product.toString() === productId.toString();
+            if (!matchesProduct) return false;
+            if ((!variantId || variantId === "none") && !i.variant) return true;
+            return String(i.variant) === String(variantId);
+        });
+
+        if (!item) {
+            return res.status(404).json({
+                message: "Cart item not found",
+                success: false,
+            });
+        }
+
+        const stock = await stockOfVariant(productId, item.variant ? item.variant.toString() : "none");
+        if (item.quantity + 1 > stock) {
+            return res.status(400).json({
+                message: `Only ${stock} items left in stock. and you already have ${item.quantity} items in your cart`,
+                success: false,
+            });
+        }
+
+        item.quantity += 1;
+        await cart.save();
+
+        const populatedCart = await fetchCartResponse(req.user._id);
+
+        return res.status(200).json({
+            message: "Cart item quantity incremented successfully",
+            success: true,
+            cart: populatedCart,
+        });
+    } catch (error) {
+        console.error("INCREMENT CART ITEM ERROR:", error);
+        return res.status(500).json({
+            message: error.message || "Failed to increment cart item",
+            success: false,
+        });
+    }
+};
+
+/**
+ * Update quantity of a specific cart item by its _id.
+ */
 export const updateCartItem = async (req, res) => {
     try {
         if (!req.user?._id) {
@@ -366,10 +278,7 @@ export const updateCartItem = async (req, res) => {
             });
         }
 
-        const cart = await cartModel.findOne({
-            user: req.user._id,
-        });
-
+        const cart = await cartModel.findOne({ user: req.user._id });
         if (!cart) {
             return res.status(404).json({
                 message: "Cart not found",
@@ -377,10 +286,7 @@ export const updateCartItem = async (req, res) => {
             });
         }
 
-        const cartItem = cart.items.find(
-            (item) => item._id.toString() === itemId
-        );
-
+        const cartItem = cart.items.find((item) => item._id.toString() === itemId.toString());
         if (!cartItem) {
             return res.status(404).json({
                 message: "Cart item not found",
@@ -388,18 +294,10 @@ export const updateCartItem = async (req, res) => {
             });
         }
 
-        let stock;
-        try {
-            stock = await stockOfVariant(
-                cartItem.product.toString(),
-                cartItem.variant?.toString()
-            );
-        } catch (stockErr) {
-            return res.status(404).json({
-                message: "Product or variant no longer available",
-                success: false,
-            });
-        }
+        const stock = await stockOfVariant(
+            cartItem.product.toString(),
+            cartItem.variant ? cartItem.variant.toString() : "none"
+        );
 
         if (parsedQty > stock) {
             return res.status(400).json({
@@ -420,14 +318,16 @@ export const updateCartItem = async (req, res) => {
         });
     } catch (error) {
         console.error("UPDATE CART ERROR:", error);
-
         return res.status(500).json({
-            message: error.message,
+            message: error.message || "Failed to update cart",
             success: false,
         });
     }
 };
 
+/**
+ * Remove a single item from user's cart by item _id.
+ */
 export const removeCartItem = async (req, res) => {
     try {
         if (!req.user?._id) {
@@ -446,10 +346,7 @@ export const removeCartItem = async (req, res) => {
             });
         }
 
-        const cart = await cartModel.findOne({
-            user: req.user._id,
-        });
-
+        const cart = await cartModel.findOne({ user: req.user._id });
         if (!cart) {
             return res.status(404).json({
                 message: "Cart not found",
@@ -457,10 +354,7 @@ export const removeCartItem = async (req, res) => {
             });
         }
 
-        const itemExists = cart.items.some(
-            (item) => item._id.toString() === itemId
-        );
-
+        const itemExists = cart.items.some((item) => item._id.toString() === itemId.toString());
         if (!itemExists) {
             return res.status(404).json({
                 message: "Cart item not found",
@@ -468,10 +362,7 @@ export const removeCartItem = async (req, res) => {
             });
         }
 
-        cart.items = cart.items.filter(
-            (item) => item._id.toString() !== itemId
-        );
-
+        cart.items = cart.items.filter((item) => item._id.toString() !== itemId.toString());
         await cart.save();
 
         const populatedCart = await fetchCartResponse(req.user._id);
@@ -483,14 +374,16 @@ export const removeCartItem = async (req, res) => {
         });
     } catch (error) {
         console.error("REMOVE CART ITEM ERROR:", error);
-
         return res.status(500).json({
-            message: error.message,
+            message: error.message || "Failed to remove cart item",
             success: false,
         });
     }
 };
 
+/**
+ * Clear all items from user's cart.
+ */
 export const clearCart = async (req, res) => {
     try {
         if (!req.user?._id) {
@@ -500,32 +393,16 @@ export const clearCart = async (req, res) => {
             });
         }
 
-        const cart = await cartModel.findOne({
-            user: req.user._id,
-        });
-
-        if (!cart) {
-            return res.status(200).json({
-                message: "Cart is already empty",
-                success: true,
-                cart: {
-                    user: req.user._id,
-                    items: [],
-                    totalPrice: 0,
-                    currency: "INR",
-                },
-            });
+        const cart = await cartModel.findOne({ user: req.user._id });
+        if (cart) {
+            cart.items = [];
+            await cart.save();
         }
-
-        cart.items = [];
-
-        await cart.save();
 
         return res.status(200).json({
             message: "Cart cleared successfully",
             success: true,
             cart: {
-                _id: cart._id,
                 user: req.user._id,
                 items: [],
                 totalPrice: 0,
@@ -534,23 +411,15 @@ export const clearCart = async (req, res) => {
         });
     } catch (error) {
         console.error("CLEAR CART ERROR:", error);
-
         return res.status(500).json({
-            message: error.message,
+            message: error.message || "Failed to clear cart",
             success: false,
         });
     }
 };
 
-
 /**
  * Creates a Razorpay order from the user's cart.
- * - Validates cart existence and items.
- * - Re-verifies all products and variants against DB.
- * - Validates stock for each item.
- * - Computes total amount server-side from trusted database prices.
- * - Creates a Razorpay order via payment service.
- * - Creates a pending Order in MongoDB.
  */
 export const createOrderController = async (req, res) => {
     try {
@@ -564,7 +433,6 @@ export const createOrderController = async (req, res) => {
         const userId = req.user._id;
         const { shippingAddress } = req.body || {};
 
-        // 1. Fetch current cart
         const cart = await cartModel.findOne({ user: userId });
         if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
             return res.status(400).json({
@@ -573,7 +441,6 @@ export const createOrderController = async (req, res) => {
             });
         }
 
-        // 2. Validate all items against DB products and check stock
         let totalAmount = 0;
         const orderItems = [];
 
@@ -591,15 +458,8 @@ export const createOrderController = async (req, res) => {
                 ? product.variants.find((v) => String(v._id) === variantIdStr)
                 : null;
 
-            if (!variant) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Selected variant for "${product.title}" is no longer available.`,
-                });
-            }
-
             const requestedQty = Math.max(1, Number(item.quantity) || 1);
-            const currentStock = Number(variant.stock ?? 0);
+            const currentStock = variant ? Number(variant.stock ?? 0) : 999;
             if (currentStock < requestedQty) {
                 return res.status(400).json({
                     success: false,
@@ -607,8 +467,7 @@ export const createOrderController = async (req, res) => {
                 });
             }
 
-            // Calculate price from trusted server-side sources
-            const effectivePrice = (variant.price && variant.price.amount != null)
+            const effectivePrice = (variant?.price && variant.price.amount != null)
                 ? variant.price
                 : (product.price || { amount: 0, currency: "INR" });
 
@@ -625,13 +484,13 @@ export const createOrderController = async (req, res) => {
 
             orderItems.push({
                 product: product._id,
-                variant: variant._id,
-                selectedVariant: {
+                variant: variant ? variant._id : undefined,
+                selectedVariant: variant ? {
                     _id: variant._id,
                     attributes: variant.attributes,
                     stock: variant.stock,
                     price: effectivePrice,
-                },
+                } : undefined,
                 title: product.title,
                 quantity: requestedQty,
                 price: {
@@ -650,7 +509,6 @@ export const createOrderController = async (req, res) => {
             });
         }
 
-        // 3. Create Razorpay order via payment service
         const razorpayOrder = await createOrder({
             amount: totalAmount,
             currency: "INR",
@@ -661,14 +519,13 @@ export const createOrderController = async (req, res) => {
             },
         });
 
-        // 4. Save pending order in MongoDB
         const resolvedAddress = {
             fullname: shippingAddress?.fullname?.trim() || req.user.fullname || "Customer",
             contact: shippingAddress?.contact?.trim() || req.user.contact || "",
-            address: shippingAddress?.address?.trim() || req.user.address || "",
-            city: shippingAddress?.city?.trim() || req.user.city || "",
-            state: shippingAddress?.state?.trim() || req.user.state || "",
-            pincode: shippingAddress?.pincode?.trim() || req.user.pincode || "",
+            address: shippingAddress?.address?.trim() || req.user.address || "Main Address",
+            city: shippingAddress?.city?.trim() || req.user.city || "City",
+            state: shippingAddress?.state?.trim() || req.user.state || "State",
+            pincode: shippingAddress?.pincode?.trim() || req.user.pincode || "110001",
         };
 
         const newOrder = await orderModel.create({
@@ -681,6 +538,28 @@ export const createOrderController = async (req, res) => {
             orderStatus: "created",
             razorpayOrderId: razorpayOrder.id,
         });
+
+        // Also save in paymentModel for compatibility
+        try {
+            await paymentModel.create({
+                user: userId,
+                razorpay: {
+                    orderId: razorpayOrder.id,
+                },
+                price: {
+                    amount: totalAmount,
+                    currency: "INR",
+                },
+                status: "pending",
+                orderItems: orderItems.map((oi) => ({
+                    title: oi.title,
+                    productId: oi.product,
+                    variantId: oi.variant,
+                    quantity: oi.quantity,
+                    price: oi.price,
+                })),
+            });
+        } catch (_) {}
 
         return res.status(200).json({
             success: true,
@@ -702,10 +581,6 @@ export const createOrderController = async (req, res) => {
 
 /**
  * Verifies Razorpay payment signature and completes order processing.
- * - Verifies timing-safe HMAC SHA256 signature using RAZORPAY_KEY_SECRET.
- * - Prevents duplicate order deductions.
- * - Deducts variant stock in database.
- * - Clears user's cart in database.
  */
 export const verifyPaymentController = async (req, res) => {
     try {
@@ -731,7 +606,6 @@ export const verifyPaymentController = async (req, res) => {
             });
         }
 
-        // 1. Locate order by user and Razorpay Order ID
         const orderQuery = {
             user: userId,
             razorpayOrderId: razorpay_order_id,
@@ -748,7 +622,6 @@ export const verifyPaymentController = async (req, res) => {
             });
         }
 
-        // 2. Prevent duplicate processing
         if (order.paymentStatus === "paid") {
             return res.status(200).json({
                 success: true,
@@ -757,7 +630,6 @@ export const verifyPaymentController = async (req, res) => {
             });
         }
 
-        // 3. Verify Razorpay cryptographic signature server-side
         const isValid = verifyPaymentSignature({
             razorpay_order_id,
             razorpay_payment_id,
@@ -767,20 +639,36 @@ export const verifyPaymentController = async (req, res) => {
         if (!isValid) {
             order.paymentStatus = "failed";
             await order.save();
+
+            await paymentModel.updateOne(
+                { "razorpay.orderId": razorpay_order_id },
+                { $set: { status: "failed" } }
+            );
+
             return res.status(400).json({
                 success: false,
                 message: "Payment signature verification failed. Untrusted payment.",
             });
         }
 
-        // 4. Mark order as paid
         order.paymentStatus = "paid";
         order.orderStatus = "processing";
         order.razorpayPaymentId = razorpay_payment_id;
         order.razorpaySignature = razorpay_signature;
         await order.save();
 
-        // 5. Decrement inventory stock safely for each variant purchased
+        await paymentModel.updateOne(
+            { "razorpay.orderId": razorpay_order_id },
+            {
+                $set: {
+                    status: "paid",
+                    "razorpay.paymentId": razorpay_payment_id,
+                    "razorpay.signature": razorpay_signature,
+                },
+            }
+        );
+
+        // Decrement inventory stock
         for (const item of order.items) {
             if (item.product && item.variant) {
                 await productModel.updateOne(
@@ -790,7 +678,7 @@ export const verifyPaymentController = async (req, res) => {
             }
         }
 
-        // 6. Clear user cart in DB only AFTER successful payment verification
+        // Clear cart
         await cartModel.updateOne({ user: userId }, { $set: { items: [] } });
 
         return res.status(200).json({
@@ -807,9 +695,10 @@ export const verifyPaymentController = async (req, res) => {
     }
 };
 
+export const verifyOrderController = verifyPaymentController;
+
 /**
- * Records a cancelled or failed payment attempt so the order state is preserved
- * without discarding cart items.
+ * Records a cancelled or failed payment attempt.
  */
 export const paymentFailedController = async (req, res) => {
     try {
@@ -835,6 +724,13 @@ export const paymentFailedController = async (req, res) => {
         if (order && order.paymentStatus !== "paid") {
             order.paymentStatus = "failed";
             await order.save();
+        }
+
+        if (razorpay_order_id) {
+            await paymentModel.updateOne(
+                { "razorpay.orderId": razorpay_order_id },
+                { $set: { status: "failed" } }
+            );
         }
 
         return res.status(200).json({

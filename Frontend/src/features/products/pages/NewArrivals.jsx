@@ -4,9 +4,9 @@ import { getAllProducts } from "../services/product.api.js";
 
 const ProductCard = ({ product, rank }) => {
     const navigate = useNavigate();
-    const coverImage = product.images?.[0]?.url || null;
-    const price = product.price?.amount ?? "—";
-    const currency = product.price?.currency ?? "INR";
+    const rawPrice = product.price ?? product.prices;
+    const price = typeof rawPrice === "object" ? (rawPrice?.amount ?? rawPrice?.price ?? null) : (rawPrice ?? null);
+    const currency = typeof rawPrice === "object" ? (rawPrice?.currency ?? "INR") : "INR";
     const symbols = { INR: "₹", USD: "$", EUR: "€", GBP: "£" };
     const symbol = symbols[currency] ?? "₹";
 
@@ -83,7 +83,7 @@ const ProductCard = ({ product, rank }) => {
                 </p>
                 <div className="flex items-center justify-between gap-1.5 flex-wrap">
                     <span className="text-sm sm:text-base font-bold text-white">
-                        {symbol}{Number(price).toLocaleString("en-IN")}
+                        {price != null && !isNaN(Number(price)) ? `${symbol}${Number(price).toLocaleString("en-IN")}` : "Price On Request"}
                     </span>
                     {createdDate && (
                         <span className="text-[9px] sm:text-[10px] text-white/40">

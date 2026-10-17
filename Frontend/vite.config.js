@@ -7,10 +7,12 @@ export default defineConfig({
 
   server: {
     proxy: {
+      // In local development, proxy /api to the local backend.
+      // In production, Vercel rewrites in vercel.json forward /api to Render.
       '/api': {
-        target: 'https://snitch-backend-19po.onrender.com',
+        target: 'http://localhost:3000',
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },

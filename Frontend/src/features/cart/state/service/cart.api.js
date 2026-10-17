@@ -6,12 +6,37 @@ const cartApiInstance = axios.create({
     withCredentials: true,
 });
 
+cartApiInstance.interceptors.request.use((config) => {
+    try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("snitch_token") : null;
+        if (token && !config.headers.Authorization) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+    } catch (_) {}
+    return config;
+});
+
+cartApiInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            try {
+                if (typeof window !== "undefined") {
+                    localStorage.removeItem("snitch_token");
+                }
+            } catch (_) {}
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const addItem = async ({ productId, variantId, quantity = 1 }) => {
-    const response = await cartApiInstance.post(`/add/${productId}/${variantId}`, {
+    const targetVariant = (variantId && variantId !== "undefined") ? variantId : "none";
+    const response = await cartApiInstance.post(`/add/${productId}/${targetVariant}`, {
         quantity
-    })
-    return response.data
-}
+    });
+    return response.data;
+};
 
 export const getCart = async () => {
     const response = await cartApiInstance.get("/")

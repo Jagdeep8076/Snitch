@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useProduct } from '../hook/useProduct.js';
 import { useCart } from '../../cart/hook/useCart.js';
@@ -11,6 +11,14 @@ const ADD_TO_CART_STATES = {
     ERROR: "error",
 };
 
+const CURRENCY_SYMBOLS = {
+    INR: "₹",
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+};
+
 const ProductDetail = () => {
     const { productId } = useParams();
     const navigate = useNavigate();
@@ -18,21 +26,42 @@ const ProductDetail = () => {
     const user = useSelector((state) => state.auth?.user);
 
     const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
+
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedAttributes, setSelectedAttributes] = useState({});
     const [addToCartState, setAddToCartState] = useState(ADD_TO_CART_STATES.IDLE);
     const [addToCartMsg, setAddToCartMsg] = useState("");
+
     const { handleGetProductById } = useProduct();
     const { handleAddItem } = useCart();
     const feedbackTimerRef = useRef(null);
 
     async function fetchProductDetails() {
+        if (!productId) {
+            setFetchError("Invalid product link");
+            setLoading(false);
+            return;
+        }
+
         try {
-            // handleGetProductById already returns data.product (the product object)
+            setLoading(true);
+            setFetchError(null);
             const productData = await handleGetProductById(productId);
-            setProduct(productData);
+            if (!productData) {
+                setFetchError("Product not found");
+                setProduct(null);
+            } else {
+                setProduct(productData);
+            }
         } catch (error) {
-            console.error("Failed to fetch product details", error);
+            console.error("Failed to fetch product details:", error);
+            const msg = error?.response?.data?.message || error?.message || "Failed to load product details";
+            setFetchError(msg);
+            setProduct(null);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -43,56 +72,96 @@ const ProductDetail = () => {
         };
     }, [productId]);
 
-    useEffect(() => {
-        if (product?.variants?.length > 0) {
-            setSelectedAttributes(product.variants[0].attributes || {});
-        }
+    const variants = useMemo(() => {
+        return Array.isArray(product?.variants) ? product.variants : [];
     }, [product]);
 
+    const hasVariants = variants.length > 0;
+
+    // Initialize attributes to first variant's attributes if available
+    useEffect(() => {
+        if (hasVariants && variants[0]?.attributes) {
+            const rawAttrs = variants[0].attributes;
+            const initial = typeof rawAttrs.entries === "function"
+                ? Object.fromEntries(rawAttrs.entries())
+                : { ...rawAttrs };
+            setSelectedAttributes(initial);
+        } else {
+            setSelectedAttributes({});
+        }
+    }, [hasVariants, variants]);
+
+    // Match active variant based on selected attributes
     const activeVariant = useMemo(() => {
-        if (!product?.variants || product.variants.length === 0) return null;
+        if (!hasVariants) return null;
 
-        return product.variants.find(v => {
+        const sKeys = Object.keys(selectedAttributes);
+
+        // Try exact match on selected attributes
+        const exactMatch = variants.find(v => {
             if (!v.attributes) return false;
+            const vAttrs = typeof v.attributes.entries === "function"
+                ? Object.fromEntries(v.attributes.entries())
+                : v.attributes;
 
-            const vKeys = Object.keys(v.attributes);
-            const sKeys = Object.keys(selectedAttributes);
-
-            const isMatch = vKeys.every(
-                k => v.attributes[k] === selectedAttributes[k]
-            );
-
-            return vKeys.length === sKeys.length && isMatch;
+            const vKeys = Object.keys(vAttrs);
+            if (vKeys.length !== sKeys.length) return false;
+            return vKeys.every(k => String(vAttrs[k]) === String(selectedAttributes[k]));
         });
-    }, [product, selectedAttributes]);
 
+        if (exactMatch) return exactMatch;
+
+        // Try partial match if any attributes are selected
+        if (sKeys.length > 0) {
+            const partial = variants.find(v => {
+                if (!v.attributes) return false;
+                const vAttrs = typeof v.attributes.entries === "function"
+                    ? Object.fromEntries(v.attributes.entries())
+                    : v.attributes;
+                return sKeys.every(k => String(vAttrs[k]) === String(selectedAttributes[k]));
+            });
+            if (partial) return partial;
+        }
+
+        // Fallback to first variant with stock > 0, or first variant
+        return variants.find(v => Number(v.stock ?? 0) > 0) || variants[0] || null;
+    }, [hasVariants, variants, selectedAttributes]);
+
+    // Available attribute options across all variants
     const availableAttributes = useMemo(() => {
-        if (!product?.variants) return {};
+        if (!hasVariants) return {};
 
         const attrs = {};
-
-        product.variants.forEach(variant => {
+        variants.forEach(variant => {
             if (variant.attributes) {
-                Object.entries(variant.attributes).forEach(([key, value]) => {
+                const entries = typeof variant.attributes.entries === "function"
+                    ? Array.from(variant.attributes.entries())
+                    : Object.entries(variant.attributes);
+
+                entries.forEach(([key, value]) => {
                     if (!attrs[key]) attrs[key] = new Set();
-                    attrs[key].add(value);
+                    if (value != null && value !== "") {
+                        attrs[key].add(String(value));
+                    }
                 });
             }
         });
 
+        const result = {};
         Object.keys(attrs).forEach(key => {
-            attrs[key] = Array.from(attrs[key]);
+            result[key] = Array.from(attrs[key]);
         });
 
-        return attrs;
-    }, [product]);
+        return result;
+    }, [hasVariants, variants]);
 
+    // Reset image index when active variant changes
     useEffect(() => {
         setSelectedImage(0);
     }, [activeVariant]);
 
     const handleAttributeChange = (attrName, value) => {
-        if (!product?.variants) return;
+        if (!hasVariants) return;
 
         setSelectedAttributes(prev => {
             if (prev[attrName] === value) {
@@ -107,54 +176,63 @@ const ProductDetail = () => {
         });
     };
 
-    const partialMatchVariant = (() => {
-        if (!product?.variants || Object.keys(selectedAttributes).length === 0) return null;
-        return product.variants.find(v => {
-            if (!v.attributes) return false;
-            return Object.entries(selectedAttributes).every(([k, val]) => v.attributes[k] === val);
-        });
-    })();
-
-    const displayImages = (() => {
+    // Images resolution (variant images prioritized, then product images)
+    const displayImages = useMemo(() => {
         const imagesMap = new Map();
-        
-        const matchVariant = activeVariant || partialMatchVariant;
-        
-        if (matchVariant?.images?.length > 0) {
-            matchVariant.images.forEach(img => imagesMap.set(img.url, img));
+        const addImg = (img) => {
+            const url = typeof img === "string" ? img : img?.url;
+            if (url && !imagesMap.has(url)) {
+                imagesMap.set(url, { url });
+            }
+        };
+
+        if (activeVariant?.images?.length > 0) {
+            activeVariant.images.forEach(addImg);
         }
 
         if (product?.images?.length > 0) {
-            product.images.forEach(img => {
-                if (!imagesMap.has(img.url)) {
-                    imagesMap.set(img.url, img);
-                }
-            });
+            product.images.forEach(addImg);
         }
 
         const combined = Array.from(imagesMap.values());
         return combined.length > 0 ? combined : [{ url: '/snitch_editorial_warm.png' }];
-    })();
+    }, [product, activeVariant]);
 
-    const displayPrice = activeVariant?.price?.amount
-        ? activeVariant.price
-        : product.price;
+    // Safe, robust price derivation reconciling .price, .prices, or flat numeric formats
+    const rawPrice = activeVariant?.price ?? activeVariant?.prices ?? product?.price ?? product?.prices;
+    const displayPrice = useMemo(() => {
+        if (!rawPrice) return { amount: 0, currency: "INR", mrp: null };
+        if (typeof rawPrice === "number" || typeof rawPrice === "string") {
+            const num = Number(rawPrice) || 0;
+            return { amount: num, currency: "INR", mrp: null };
+        }
+        const amt = Number(rawPrice.amount ?? rawPrice.price ?? 0);
+        const curr = rawPrice.currency || "INR";
+        const rawMrp = rawPrice.mrp != null ? Number(rawPrice.mrp) : null;
+        const mrp = Number.isFinite(rawMrp) && rawMrp > amt ? rawMrp : null;
+        return { amount: amt, currency: curr, mrp };
+    }, [rawPrice]);
 
-    const isOutOfStock =
-        Boolean(activeVariant) && Number(activeVariant.stock) <= 0;
+    const isOutOfStock = hasVariants
+        ? (Boolean(activeVariant) && Number(activeVariant.stock ?? 0) <= 0)
+        : false;
+
+    const canAddToCart = !isOutOfStock && (!hasVariants || Boolean(activeVariant));
 
     const handleAddToCart = async () => {
-        if (!product?._id || !activeVariant?._id || isOutOfStock) return;
+        if (!product?._id || !canAddToCart) return;
         if (addToCartState === ADD_TO_CART_STATES.LOADING) return;
 
-        // Phase 1: Guest click check — if unauthenticated, redirect to Login preserving destination
+        const effectiveVariantId = activeVariant?._id || "none";
+
+        // Guest click check — if unauthenticated, redirect to Login preserving destination
         if (!user) {
             navigate("/login", {
                 state: {
                     from: location,
                     action: "add_to_cart",
                     productId: product._id,
-                    variantId: activeVariant._id,
+                    variantId: effectiveVariantId,
                 },
             });
             return;
@@ -166,7 +244,7 @@ const ProductDetail = () => {
 
             const data = await handleAddItem({
                 productId: product._id,
-                variantId: activeVariant._id,
+                variantId: effectiveVariantId,
                 quantity: 1,
             });
 
@@ -179,13 +257,12 @@ const ProductDetail = () => {
         } catch (error) {
             console.error("Failed to add item to cart:", error);
             if (error?.response?.status === 401) {
-                // Backend session expired or cookie invalid — redirect to login
                 navigate("/login", {
                     state: {
                         from: location,
                         action: "add_to_cart",
                         productId: product._id,
-                        variantId: activeVariant._id,
+                        variantId: effectiveVariantId,
                     },
                 });
                 return;
@@ -194,7 +271,7 @@ const ProductDetail = () => {
             setAddToCartState(ADD_TO_CART_STATES.ERROR);
             setAddToCartMsg(msg);
         } finally {
-            // Reset state after 3 seconds
+            if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
             feedbackTimerRef.current = setTimeout(() => {
                 setAddToCartState(ADD_TO_CART_STATES.IDLE);
                 setAddToCartMsg("");
@@ -209,16 +286,17 @@ const ProductDetail = () => {
             !hasAutoAddedRef.current &&
             location.state?.action === "add_to_cart" &&
             user &&
-            activeVariant &&
-            !isOutOfStock
+            product &&
+            canAddToCart
         ) {
             hasAutoAddedRef.current = true;
             handleAddToCart();
         }
-    }, [user, activeVariant, isOutOfStock]);
+    }, [user, product, canAddToCart]);
 
     const getAddToCartText = () => {
         if (isOutOfStock) return "Out of Stock";
+        if (hasVariants && !activeVariant) return "Select an Option";
         switch (addToCartState) {
             case ADD_TO_CART_STATES.LOADING: return "Adding...";
             case ADD_TO_CART_STATES.SUCCESS: return "Added ✓";
@@ -229,8 +307,8 @@ const ProductDetail = () => {
 
     const getAddToCartBtnClass = () => {
         const base = "w-full h-12 rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-sm transition-all duration-150 ";
-        if (!activeVariant || isOutOfStock) {
-            return base + "bg-surface-container-high text-on-surface/50 cursor-not-allowed border border-surface-container-high";
+        if (!canAddToCart) {
+            return base + "bg-surface-container-high text-on-surface/40 cursor-not-allowed border border-surface-container-high";
         }
         if (addToCartState === ADD_TO_CART_STATES.SUCCESS) {
             return base + "bg-emerald-600 text-white cursor-default";
@@ -239,59 +317,117 @@ const ProductDetail = () => {
             return base + "bg-red-600/80 text-white hover:opacity-90 active:scale-[0.99]";
         }
         if (addToCartState === ADD_TO_CART_STATES.LOADING) {
-            return base + "bg-primary text-on-primary opacity-70 cursor-wait";
+            return base + "bg-white text-black opacity-70 cursor-wait";
         }
-        return base + "bg-primary text-on-primary hover:opacity-90 active:scale-[0.99]";
+        return base + "bg-white text-black hover:bg-white/90 active:scale-[0.99]";
     };
 
-    if (!product) {
+    const currencySymbol = CURRENCY_SYMBOLS[displayPrice?.currency] || displayPrice?.currency || "₹";
+
+    /* Loading state */
+    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <p className="text-[10px] uppercase tracking-[0.2em] font-medium animate-pulse text-outline font-[Plus_Jakarta_Sans]">
-                    Retrieving piece...
+            <div className="min-h-screen pb-24 bg-[#111113] text-on-surface antialiased font-[Plus_Jakarta_Sans]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 xl:px-24 pt-24 sm:pt-28">
+                    <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
+                        {/* Skeleton Image */}
+                        <div className="w-full lg:w-[60%] aspect-[4/5] rounded-2xl border border-white/[0.06] bg-white/[0.03] animate-pulse" />
+                        {/* Skeleton Details */}
+                        <div className="w-full lg:w-[40%] space-y-6 pt-4">
+                            <div className="h-4 w-24 bg-white/[0.06] rounded-full animate-pulse" />
+                            <div className="h-10 w-3/4 bg-white/[0.08] rounded-xl animate-pulse" />
+                            <div className="h-8 w-1/3 bg-white/[0.06] rounded-xl animate-pulse" />
+                            <div className="h-px w-full bg-white/[0.06]" />
+                            <div className="space-y-3">
+                                <div className="h-4 w-full bg-white/[0.04] rounded-full animate-pulse" />
+                                <div className="h-4 w-5/6 bg-white/[0.04] rounded-full animate-pulse" />
+                            </div>
+                            <div className="h-12 w-full bg-white/[0.08] rounded-full animate-pulse mt-8" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    /* Error or Product Not Found state */
+    if (fetchError || !product) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#111113] px-4 text-center font-[Plus_Jakarta_Sans]">
+                <div
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                >
+                    <span className="material-symbols-outlined text-white/40" style={{ fontSize: "36px" }}>
+                        inventory_2
+                    </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                    {fetchError || "Product Not Found"}
+                </h1>
+                <p className="text-sm text-white/45 max-w-sm mb-8 leading-relaxed">
+                    The fashion piece you are looking for is unavailable or does not exist. Browse our collections to find your fit.
                 </p>
+                <div className="flex items-center gap-4 flex-wrap justify-center">
+                    <Link
+                        to="/collections"
+                        className="px-6 py-3 rounded-full bg-white text-black text-xs font-bold uppercase tracking-wider hover:bg-white/90 transition-all"
+                    >
+                        Browse Collections
+                    </Link>
+                    <button
+                        onClick={fetchProductDetails}
+                        className="px-6 py-3 rounded-full border border-white/20 text-white text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-all"
+                    >
+                        Retry
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen pb-24 bg-background text-on-surface antialiased font-[Plus_Jakarta_Sans]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 xl:px-24 pt-8 sm:pt-12 lg:pt-20">
+        <div className="min-h-screen pb-24 bg-[#111113] text-on-surface antialiased font-[Plus_Jakarta_Sans]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 xl:px-24 pt-20 sm:pt-24 lg:pt-28">
 
-                <div className="flex flex-col lg:flex-row gap-8 lg:gap-24 items-start">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
 
-                    <div className="w-full lg:w-[70%] flex flex-col-reverse md:flex-row gap-3 sm:gap-4 lg:gap-6">
+                    {/* Left: Product Images Gallery */}
+                    <div className="w-full lg:w-[60%] flex flex-col-reverse md:flex-row gap-3 sm:gap-4 lg:gap-6">
 
                         {displayImages.length > 1 && (
-                            <div className="flex flex-row md:flex-col gap-4 overflow-x-auto md:overflow-y-auto pb-2 md:pb-0 w-full md:w-20 lg:w-24 flex-shrink-0 md:max-h-[calc(100vh-200px)]">
+                            <div className="flex flex-row md:flex-col gap-3 overflow-x-auto md:overflow-y-auto pb-2 md:pb-0 w-full md:w-20 lg:w-24 flex-shrink-0 md:max-h-[calc(100vh-200px)]">
                                 {displayImages.map((img, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setSelectedImage(idx)}
-                                        className={`flex-shrink-0 w-20 md:w-full aspect-[4/5] overflow-hidden rounded-xl border transition-all duration-300 ${
+                                        className={`flex-shrink-0 w-16 md:w-full aspect-[4/5] overflow-hidden rounded-xl border transition-all duration-300 ${
                                             selectedImage === idx
-                                                ? 'opacity-100 border-primary ring-1 ring-primary/50'
-                                                : 'opacity-50 border-surface-container-high hover:opacity-100 hover:border-outline'
+                                                ? 'opacity-100 border-white ring-1 ring-white/50'
+                                                : 'opacity-50 border-white/10 hover:opacity-100 hover:border-white/30'
                                         }`}
                                     >
                                         <img
                                             src={img.url}
                                             alt={`View ${idx + 1}`}
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = "/snitch_editorial_warm.png";
+                                            }}
                                         />
                                     </button>
                                 ))}
                             </div>
                         )}
 
-                        <div className="relative w-full aspect-[4/5] overflow-hidden group rounded-2xl border border-surface-container-high bg-surface-container">
+                        <div className="relative w-full aspect-[4/5] overflow-hidden group rounded-2xl border border-white/[0.08] bg-[#18181c]">
                             <img
-                                src={
-                                    displayImages[selectedImage]?.url ||
-                                    displayImages[0].url
-                                }
+                                src={displayImages[selectedImage]?.url || displayImages[0]?.url || "/snitch_editorial_warm.png"}
                                 alt={product.title}
                                 className="w-full h-full object-cover transition-opacity duration-500"
+                                onError={(e) => {
+                                    e.currentTarget.src = "/snitch_editorial_warm.png";
+                                }}
                             />
 
                             {displayImages.length > 1 && (
@@ -299,12 +435,10 @@ const ProductDetail = () => {
                                     <button
                                         onClick={() =>
                                             setSelectedImage(prev =>
-                                                prev === 0
-                                                    ? displayImages.length - 1
-                                                    : prev - 1
+                                                prev === 0 ? displayImages.length - 1 : prev - 1
                                             )
                                         }
-                                        className="absolute left-3 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center opacity-85 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 rounded-full bg-surface-container-low/80 backdrop-blur-sm text-on-surface border border-surface-container-high hover:bg-surface-container"
+                                        className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center opacity-85 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/90"
                                         aria-label="Previous image"
                                     >
                                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_back</span>
@@ -313,12 +447,10 @@ const ProductDetail = () => {
                                     <button
                                         onClick={() =>
                                             setSelectedImage(prev =>
-                                                prev === displayImages.length - 1
-                                                    ? 0
-                                                    : prev + 1
+                                                prev === displayImages.length - 1 ? 0 : prev + 1
                                             )
                                         }
-                                        className="absolute right-3 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center opacity-85 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 rounded-full bg-surface-container-low/80 backdrop-blur-sm text-on-surface border border-surface-container-high hover:bg-surface-container"
+                                        className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center opacity-85 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/90"
                                         aria-label="Next image"
                                     >
                                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_forward</span>
@@ -328,62 +460,64 @@ const ProductDetail = () => {
                         </div>
                     </div>
 
-                    <div className="w-full lg:w-[30%] lg:sticky lg:top-24 flex flex-col pt-4">
+                    {/* Right: Product Info & Actions */}
+                    <div className="w-full lg:w-[40%] lg:sticky lg:top-28 flex flex-col pt-2">
 
                         <button
                             onClick={() => navigate(-1)}
-                            className="self-start mb-8 text-[10px] uppercase tracking-[0.2em] font-bold text-outline hover:text-on-surface transition-colors flex items-center gap-2"
+                            className="self-start mb-6 text-[10px] uppercase tracking-[0.2em] font-bold text-white/50 hover:text-white transition-colors flex items-center gap-2"
                         >
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_back</span>
                             Back
                         </button>
 
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-on-surface leading-[1.15] mb-4 sm:mb-6 break-words">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white leading-[1.15] mb-4 break-words">
                             {product.title}
                         </h1>
 
-                        <div className="mb-8 flex flex-col">
-                            <div className="flex items-center gap-2 text-xl font-semibold text-on-surface">
-                                <span>
-                                    {{ "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}
-                                </span>
-                                <span>{displayPrice?.amount?.toLocaleString()}</span>
+                        {/* Price Section */}
+                        <div className="mb-6 flex flex-col">
+                            <div className="flex items-center gap-2.5 text-2xl font-bold text-white">
+                                <span>{currencySymbol}</span>
+                                <span>{Number(displayPrice.amount || 0).toLocaleString("en-IN")}</span>
                             </div>
-                            
-                            {displayPrice?.mrp > displayPrice?.amount && (
-                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 flex-wrap">
-                                    <div className="flex items-center gap-1 text-outline line-through text-xs sm:text-sm">
-                                        <span>{{ "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}</span>
-                                        <span>{displayPrice.mrp.toLocaleString()}</span>
-                                    </div>
-                                    <div className="bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded text-[10px] sm:text-xs tracking-wider">
+
+                            {displayPrice.mrp && displayPrice.mrp > displayPrice.amount && (
+                                <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+                                    <span className="text-white/40 line-through text-xs sm:text-sm">
+                                        {currencySymbol}{Number(displayPrice.mrp).toLocaleString("en-IN")}
+                                    </span>
+                                    <span className="bg-emerald-500/15 text-emerald-400 font-bold px-2 py-0.5 rounded text-[10px] sm:text-xs tracking-wider border border-emerald-500/20">
                                         SAVE {Math.round(((displayPrice.mrp - displayPrice.amount) / displayPrice.mrp) * 100)}%
-                                    </div>
-                                    <div className="text-emerald-500 text-[11px] sm:text-xs font-semibold">
-                                        (Save { { "INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥" }[displayPrice?.currency] || displayPrice?.currency || "₹"}{(displayPrice.mrp - displayPrice.amount).toLocaleString()})
-                                    </div>
+                                    </span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="h-px w-full mb-8 bg-surface-container-high" />
+                        <div className="h-px w-full mb-6 bg-white/[0.08]" />
 
+                        {/* Variant Attributes Selection */}
                         {Object.entries(availableAttributes).map(
                             ([attrName, values]) => (
-                                <div key={attrName} className="mb-6">
-                                    <h3 className="text-xs uppercase tracking-[0.24em] font-semibold mb-3 text-secondary">
-                                        {attrName}: <span className="text-on-surface">{selectedAttributes[attrName] || ""}</span>
+                                <div key={attrName} className="mb-5">
+                                    <h3 className="text-xs uppercase tracking-[0.2em] font-semibold mb-2.5 text-white/60">
+                                        {attrName}: <span className="text-white font-bold">{selectedAttributes[attrName] || "Select"}</span>
                                     </h3>
 
                                     <div className="flex flex-wrap gap-2">
                                         {values.map(value => {
                                             const isSelected = selectedAttributes[attrName] === value;
 
-                                            const isValid = product.variants.some(v => {
-                                                if (!v.attributes || v.attributes[attrName] !== value) return false;
+                                            const isValid = variants.some(v => {
+                                                if (!v.attributes) return false;
+                                                const vAttrs = typeof v.attributes.entries === "function"
+                                                    ? Object.fromEntries(v.attributes.entries())
+                                                    : v.attributes;
+
+                                                if (String(vAttrs[attrName]) !== String(value)) return false;
                                                 return Object.entries(selectedAttributes).every(([k, selectedVal]) => {
                                                     if (k === attrName) return true;
-                                                    return v.attributes[k] === selectedVal;
+                                                    return String(vAttrs[k]) === String(selectedVal);
                                                 });
                                             });
 
@@ -392,12 +526,12 @@ const ProductDetail = () => {
                                                     key={value}
                                                     disabled={!isValid}
                                                     onClick={() => handleAttributeChange(attrName, value)}
-                                                    className={`px-4 py-2.5 text-[11px] uppercase tracking-[0.15em] font-bold transition-all duration-200 rounded-full border ${
+                                                    className={`px-4 py-2 text-[11px] uppercase tracking-[0.15em] font-bold transition-all duration-200 rounded-full border ${
                                                         isSelected
-                                                            ? 'bg-primary text-on-primary border-primary'
+                                                            ? 'bg-white text-black border-white shadow-sm'
                                                             : isValid
-                                                                ? 'bg-surface-container text-on-surface border-surface-container-high hover:border-outline hover:bg-surface-container-high'
-                                                                : 'bg-surface-container/50 text-on-surface/30 border-surface-container-high/30 cursor-not-allowed opacity-50 line-through'
+                                                                ? 'bg-white/[0.04] text-white/80 border-white/10 hover:border-white/30 hover:bg-white/[0.08]'
+                                                                : 'bg-white/[0.02] text-white/20 border-white/5 cursor-not-allowed line-through'
                                                     }`}
                                                 >
                                                     {value}
@@ -409,14 +543,15 @@ const ProductDetail = () => {
                             )
                         )}
 
-                        {activeVariant ? (
+                        {/* Stock indicator */}
+                        {hasVariants && activeVariant && (
                             <div className="mb-6 flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${activeVariant.stock > 0 ? 'bg-emerald-500' : 'bg-error'}`} />
-                                <span className={`text-[11px] uppercase tracking-[0.1em] font-bold ${activeVariant.stock > 0 ? 'text-emerald-500' : 'text-error'}`}>
-                                    {activeVariant.stock > 0 ? `Only ${activeVariant.stock} left in stock` : 'Out of stock'}
+                                <span className={`w-2 h-2 rounded-full ${Number(activeVariant.stock ?? 0) > 0 ? 'bg-emerald-400' : 'bg-red-500'}`} />
+                                <span className={`text-[11px] uppercase tracking-[0.1em] font-bold ${Number(activeVariant.stock ?? 0) > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {Number(activeVariant.stock ?? 0) > 0 ? `${activeVariant.stock} in stock` : 'Out of stock'}
                                 </span>
                             </div>
-                        ) : null}
+                        )}
 
                         {/* Add to Cart feedback message */}
                         {addToCartMsg && (
@@ -431,47 +566,50 @@ const ProductDetail = () => {
                             </div>
                         )}
 
-                        <div className="mb-12">
-                            <h3 className="text-xs uppercase tracking-[0.24em] font-semibold mb-4 text-secondary">
-                                The Details
-                            </h3>
-                            <p className="text-sm leading-relaxed text-on-surface-variant">
-                                {product.description}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-4 mt-auto">
+                        {/* Action buttons */}
+                        <div className="flex flex-col gap-3 mt-4">
                             <button
                                 type="button"
-                                disabled={!activeVariant || isOutOfStock || addToCartState === ADD_TO_CART_STATES.LOADING}
+                                disabled={!canAddToCart || addToCartState === ADD_TO_CART_STATES.LOADING}
                                 onClick={handleAddToCart}
                                 className={getAddToCartBtnClass()}
                             >
                                 {getAddToCartText()}
                             </button>
 
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="w-full h-12 bg-surface-container border border-surface-container-high text-on-surface rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center hover:bg-surface-container-high transition-all duration-150"
+                            <Link
+                                to="/collections"
+                                className="w-full h-12 bg-white/[0.04] border border-white/10 text-white rounded-full text-sm font-bold tracking-wider uppercase flex items-center justify-center hover:bg-white/[0.08] transition-all duration-150"
                             >
                                 Continue Shopping
-                            </button>
+                            </Link>
                         </div>
 
-                        <div className="mt-14 space-y-4 text-[11px] uppercase tracking-[0.1em] text-outline font-medium">
-                            <div className="flex justify-between border-b border-surface-container-high pb-3">
+                        {/* Description */}
+                        {product.description && (
+                            <div className="mt-8 pt-6 border-t border-white/[0.08]">
+                                <h3 className="text-xs uppercase tracking-[0.2em] font-semibold mb-3 text-white/50">
+                                    The Details
+                                </h3>
+                                <p className="text-xs sm:text-sm leading-relaxed text-white/70 whitespace-pre-line">
+                                    {product.description}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Trust highlights */}
+                        <div className="mt-8 space-y-3 text-[11px] uppercase tracking-[0.1em] text-white/40 font-medium">
+                            <div className="flex justify-between border-b border-white/[0.06] pb-2.5">
                                 <span>Shipping</span>
-                                <span className="text-on-surface-variant">Complimentary over INR 15,000</span>
+                                <span className="text-white/70">Complimentary over ₹999</span>
                             </div>
-
-                            <div className="flex justify-between border-b border-surface-container-high pb-3">
+                            <div className="flex justify-between border-b border-white/[0.06] pb-2.5">
                                 <span>Returns</span>
-                                <span className="text-on-surface-variant">Within 14 days of delivery</span>
+                                <span className="text-white/70">Within 7 days of delivery</span>
                             </div>
-
-                            <div className="flex justify-between border-b border-surface-container-high pb-3">
+                            <div className="flex justify-between border-b border-white/[0.06] pb-2.5">
                                 <span>Authenticity</span>
-                                <span className="text-on-surface-variant">100% Guaranteed</span>
+                                <span className="text-white/70">100% Guaranteed</span>
                             </div>
                         </div>
 

@@ -45,8 +45,9 @@ const ProductCard = ({ product }) => {
     product.image ||
     null;
 
-  const price = product.price?.amount ?? product.price ?? "—";
-  const currency = product.price?.currency ?? "INR";
+  const rawPrice = product.price ?? product.prices;
+  const price = typeof rawPrice === "object" ? (rawPrice?.amount ?? rawPrice?.price ?? null) : (rawPrice ?? null);
+  const currency = typeof rawPrice === "object" ? (rawPrice?.currency ?? "INR") : "INR";
   const symbols = { INR: "₹", USD: "$", EUR: "€", GBP: "£", AED: "د.إ", JPY: "¥" };
   const symbol = symbols[currency] ?? currency;
 
@@ -95,7 +96,7 @@ const ProductCard = ({ product }) => {
         </p>
         <div className="flex items-center justify-between">
           <span className="text-base font-bold text-primary">
-            {symbol}{Number(price).toLocaleString("en-IN")}
+            {price != null && !isNaN(Number(price)) ? `${symbol}${Number(price).toLocaleString("en-IN")}` : "Price On Request"}
           </span>
           <span
             className="px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-surface-container-high text-on-surface-variant"

@@ -372,10 +372,10 @@ const SellerProductDetail = () => {
                                 ) : (
                                     <div className="flex items-center gap-3">
                                         <div className="flex flex-col">
-                                            <span className="text-2xl font-semibold">{product.price?.amount?.toLocaleString()}</span>
-                                            {product.price?.mrp > product.price?.amount && (
+                                            <span className="text-2xl font-semibold">{product.price?.amount != null ? Number(product.price.amount).toLocaleString() : "—"}</span>
+                                            {product.price?.mrp && product.price?.amount && product.price.mrp > product.price.amount && (
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm text-outline line-through">{product.price.mrp.toLocaleString()}</span>
+                                                    <span className="text-sm text-outline line-through">{Number(product.price.mrp).toLocaleString()}</span>
                                                     <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
                                                         SAVE {Math.round(((product.price.mrp - product.price.amount) / product.price.mrp) * 100)}%
                                                     </span>
